@@ -34,52 +34,6 @@ def main():
                 url_path="/pares"
             )
         ],
-        "Graficador Estudiantes": [
-            st.Page(
-                page="app_pages/estudiantes.py",
-                title="Graficador Estudiantes",
-                icon="📊",
-                url_path="/estudiantes"
-            )
-        ],
-        "Graficador Publico Pares": [
-            st.Page(
-                page="app_pages/public_pares.py",
-                title="Graficador Publico Pares",
-                icon="📊",
-                url_path="/public_pares"
-            )
-        ],"Graficador Publico Estudiantes": [
-            st.Page(
-                page="app_pages/public_estudiantes.py",
-                title="Graficador Publico Estudiantes",
-                icon="📊",
-                url_path="/public_estudiantes"
-            )
-        ], "Flourish": [
-            st.Page(
-                page="app_pages/flourish.py",
-                title="Graficas de flourish",
-                icon="📊",
-                url_path="/flourish"
-            )
-        ],
-        "Graficador de Instantaneas": [
-            st.Page(
-                page="app_pages/instantaneas.py",
-                title="Graficador de Instantaneas",
-                icon="📊",
-                url_path="/instantaneas"
-            )
-        ],
-        "Graficador de Preguntas Generales": [
-            st.Page(
-                page="app_pages/preguntas_generales.py",
-                title="Graficador de Preguntas Generales",
-                icon="📊",
-                url_path="/preguntas_generales"
-            )
-        ],          
     }
 
     app = st.navigation(pages)

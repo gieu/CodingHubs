@@ -31,13 +31,7 @@ NAVBAR_TEMPLATE = """
             <a href="#" class="dropbtn">C2 Nodos <span class="arrow-down">▼</span></a>
             <div class="dropdown-content">
                 <a href="/colpro_dev/marco" target="_self">Marco de calidad</a>
-                <a href="/colpro_dev/flourish" target="_self">Graficos Informe</a>
                 <a href="/colpro_dev/pares" target="_self">Pares expertos</a>
-                <a href="/colpro_dev/estudiantes" target="_self">Estudiantes</a>
-                <a href="/colpro_dev/public_pares" target="_self">Pares expertos (público)</a>
-                <a href="/colpro_dev/public_estudiantes" target="_self">Estudiantes (público)</a>
-                <a href="/colpro_dev/instantaneas" target="_self">Instantaneas</a>
-                <a href="/colpro_dev/preguntas_generales" target="_self">Preguntas Generales</a>
             </div>
         </div>
     </div>

@@ -13,7 +13,7 @@ st.set_page_config(
 st.markdown(HIDE_STREAMLIT_STYLE, unsafe_allow_html=True)
 
 # Generar el CSS personalizado con el color deseado
-color_fondo_navbar = "#004884"  # Cambia este valor según lo necesites
+color_fondo_navbar = "#282255"  # Cambia este valor según lo necesites
 custom_css = generar_css_personalizado(color_fondo_navbar)
 
 # Aplicar el CSS en Streamlit
