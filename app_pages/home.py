@@ -31,42 +31,6 @@ st.markdown("---")
 st.write(TEXTO)
 st.markdown("---")
 
-# Datos de los Nodos
-st.subheader("Componente 2 - Nodos del pensamiento computacional")
-cols = st.columns(3)
-nodos_count, departamentos_count, mentores_count = obtener_datos_nodos(CSV_URL_COMPONENTE_2)  # Corregido aquí
-
-with cols[0]: 
-    st.metric(label='Nodos', value=nodos_count)
-
-with cols[1]: 
-    st.metric(label='Departamentos', value=departamentos_count)  # Corregido aquí
-
-with cols[2]: 
-    st.metric(label='Mentores', value=mentores_count)
-
-# Dibujar Mapa de Colombia
-datos_mapa = obtener_datos_mapa(CSV_URL_COMPONENTE_2)
-dibujar_mapa(datos_mapa)
-
-
-st.subheader("Componente 3 - Instituciones rurales")
-cols = st.columns(3)
-nodos_count, departamentos_count, mentores_count = obtener_datos_nodos(CSV_URL_COMPONENTE_3)  # Corregido aquí
-
-with cols[0]: 
-    st.metric(label='Instituciones', value=nodos_count)
-
-with cols[1]: 
-    st.metric(label='Departamentos', value=departamentos_count)  # Corregido aquí
-
-with cols[2]: 
-    st.metric(label='Directivos', value=mentores_count)
-
-# Dibujar Mapa de Colombia
-datos_mapa = obtener_datos_mapa(CSV_URL_COMPONENTE_3)
-dibujar_mapa(datos_mapa)
-
 # Pie de página
 st.markdown("---")
 st.write("© 2025 Colombia Programa - Ministerio de Tecnologías de la Información y las Comunicaciones (MinTIC)")

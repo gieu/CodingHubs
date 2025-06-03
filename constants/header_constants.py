@@ -1,7 +1,7 @@
 import actions.utils as utils
 
 # Ruta del logo del navbar
-RUTA_LOGO_NAVBAR = "./assets/logo.png"
+RUTA_LOGO_NAVBAR = "./assets/recursos-01.png"
 LOGO_NAVBAR_BASE64 = utils.imagen_a_base64(RUTA_LOGO_NAVBAR)
 
 # Define una variable para el color de fondo
@@ -21,16 +21,14 @@ NAVBAR_TEMPLATE = """
     <div class="logo">
         <a href="/colpro_dev/" target="_self" class="logo-link">
             <img src="data:image/png;base64,{LOGO_NAVBAR_BASE64}" alt="Logo Colombia Programa" class="logo-img">
-            <span class="logo-text">Colombia Programa</span>
+            <span class="logo-text"></span>
         </a>
     </div>
     <div class="nav-links">
         <a href="/colpro_dev/" target="_self">Inicio</a>
-        <a href="/colpro_dev/intro" target="_self">¿Qué es Colombia Programa?</a>
         <div class="dropdown">
             <a href="#" class="dropbtn">C2 Nodos <span class="arrow-down">▼</span></a>
             <div class="dropdown-content">
-                <a href="/colpro_dev/marco" target="_self">Marco de calidad</a>
                 <a href="/colpro_dev/pares" target="_self">Pares expertos</a>
             </div>
         </div>
@@ -170,7 +168,7 @@ def generar_css_personalizado(color_fondo_navbar=DEFAULT_COLOR_FONDO_NAVBAR):
         bottom: 0;
         width: 100%;
         height: 9%;
-        background-color: #412f6f;
+        background-color: #ffffff;
         padding: 5px;
         text-align: center;
     }}
