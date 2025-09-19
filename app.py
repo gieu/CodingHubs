@@ -17,14 +17,6 @@ def main():
                 icon="❓",
                 url_path="/intro"
             )
-        ],       
-        "Marco de Consolidacion": [
-            st.Page(
-                page="app_pages/marco.py",
-                title="Marco de Consolidacion",
-                icon="📊",
-                url_path="/marco"
-            )
         ],
         "Graficador Pares": [
             st.Page(

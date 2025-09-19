@@ -27,7 +27,7 @@ NAVBAR_TEMPLATE = """
     <div class="nav-links">
         <a href="/colpro_dev/" target="_self">Inicio</a>
         <div class="dropdown">
-            <a href="#" class="dropbtn">C2 Nodos <span class="arrow-down">▼</span></a>
+            <a href="#" class="dropbtn">Pares <span class="arrow-down">▼</span></a>
             <div class="dropdown-content">
                 <a href="/colpro_dev/pares" target="_self">Pares expertos</a>
             </div>
