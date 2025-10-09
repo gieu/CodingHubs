@@ -11,35 +11,36 @@ def es_numerica(col, df):
     except KeyError:
         return False
 
-def aplicar_filtros(df):
+def aplicar_filtros(df, key_suffix=""):
     """Aplica filtros dinámicos al DataFrame."""
     df_filtrado = df.copy()
     with st.expander("Filtros de Datos (Opcional)", expanded=False):
-        columnas_filtro = st.multiselect("Selecciona columnas para filtrar", df.columns)
-        for col in columnas_filtro:
+        columnas_filtro = st.multiselect("Selecciona columnas para filtrar", df.columns, key=f"aplicar_filtros_columnas_{key_suffix}")
+        for i, col in enumerate(columnas_filtro):
             if es_numerica(col, df):
                 rango = st.slider(
                     f"Rango para {col}",
                     float(df[col].min()),
                     float(df[col].max()),
                     (float(df[col].min()), float(df[col].max())),
+                    key=f"aplicar_filtros_rango_{col}_{i}_{key_suffix}"
                 )
                 df_filtrado = df_filtrado[(df_filtrado[col] >= rango[0]) & (df_filtrado[col] <= rango[1])]
             else:
                 valores = df[col].dropna().unique().tolist()
-                seleccionados = st.multiselect(f"Valores para {col}", valores, default=valores)
+                seleccionados = st.multiselect(f"Valores para {col}", valores, default=valores, key=f"aplicar_filtros_valores_{col}_{i}_{key_suffix}")
                 df_filtrado = df_filtrado[df_filtrado[col].isin(seleccionados)]
     return df_filtrado
 
-def graficador (df):
+def graficador (df, key_suffix=""):
     # Selección del tipo de gráfico
-    chart_type = st.radio("Tipo de Gráfico", ["Barras", "Dispersión", "Cajas", "Línea", "Histograma"])
+    chart_type = st.radio("Tipo de Gráfico", ["Barras", "Dispersión", "Cajas", "Línea", "Histograma"], key=f"chart_type_{key_suffix}")
 
     # Selección de categoría y columna para el eje X
-    col_x = st.selectbox("Selecciona una columna para el eje X", df.columns)
+    col_x = st.selectbox("Selecciona una columna para el eje X", df.columns, key=f"col_x_{key_suffix}")
 
     # Selección de categoría y columna para el eje Y
-    col_y = st.selectbox("Variable para el eje Y", df.columns)
+    col_y = st.selectbox("Variable para el eje Y", df.columns, key=f"col_y_{key_suffix}")
 
     if col_x == col_y:
         st.warning("La variable para el eje X y el eje Y no pueden ser la misma. Por favor, selecciona columnas diferentes.")
@@ -50,13 +51,13 @@ def graficador (df):
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        facet_col = st.selectbox("Dividir en columnas por (opcional)", ["Ninguna"] + [col for col in df.columns if col != col_y])
+        facet_col = st.selectbox("Dividir en columnas por (opcional)", ["Ninguna"] + [col for col in df.columns if col != col_y], key=f"facet_col_{key_suffix}")
 
     with col2:
-        facet_row = st.selectbox("Dividir en filas por (opcional)", ["Ninguna"] + [col for col in df.columns if col != col_y])
+        facet_row = st.selectbox("Dividir en filas por (opcional)", ["Ninguna"] + [col for col in df.columns if col != col_y], key=f"facet_row_{key_suffix}")
 
     with col3:
-        col_color = st.selectbox("Agrupar por color (opcional)", ["Ninguna"] + [col for col in df.columns if col != col_y])
+        col_color = st.selectbox("Agrupar por color (opcional)", ["Ninguna"] + [col for col in df.columns if col != col_y], key=f"col_color_{key_suffix}")
 
 
     def es_numerica(col, df):
@@ -69,14 +70,14 @@ def graficador (df):
     df_filtrado = df.copy()
 
     with st.expander("Filtros de Datos (Opcional)", expanded=False):
-        columnas_filtro = st.multiselect("Selecciona columnas para filtrar", df.columns)
-        for col in columnas_filtro:
+        columnas_filtro = st.multiselect("Selecciona columnas para filtrar", df.columns, key=f"columnas_filtro_{key_suffix}")
+        for i, col in enumerate(columnas_filtro):
             if es_numerica(col, df):
-                rango = st.slider(f"Rango para {col}", float(df[col].min()), float(df[col].max()), (float(df[col].min()), float(df[col].max())))
+                rango = st.slider(f"Rango para {col}", float(df[col].min()), float(df[col].max()), (float(df[col].min()), float(df[col].max())), key=f"rango_{col}_{i}_{key_suffix}")
                 df_filtrado = df_filtrado[(df_filtrado[col] >= rango[0]) & (df_filtrado[col] <= rango[1])]
             else:
                 valores = df[col].dropna().unique().tolist()
-                seleccionados = st.multiselect(f"Valores para {col}", valores, default=valores)
+                seleccionados = st.multiselect(f"Valores para {col}", valores, default=valores, key=f"valores_{col}_{i}_{key_suffix}")
                 df_filtrado = df_filtrado[df_filtrado[col].isin(seleccionados)]
 
 
@@ -94,7 +95,7 @@ def graficador (df):
         if es_numerica(col_y, df):
             opciones_agregacion.insert(1, "Promedio")  # Solo agregar 'Promedio' si es numérica
             opciones_agregacion.insert(2, "Suma" ) 
-        metodo_agregacion = st.selectbox("Método de agregación", opciones_agregacion)
+        metodo_agregacion = st.selectbox("Método de agregación", opciones_agregacion, key=f"metodo_agregacion_{key_suffix}")
         aggfunc = {"Promedio": "mean","Suma": "sum", "Cuenta": "count", "Cuenta de únicos": "nunique"}[metodo_agregacion]
         indices=[facet_col,facet_row, col_color, col_x]#contiene todos los datos de los filtros que no sea ninguna ni eje y
         indices=set(indices).difference(set(["Ninguna"]))#elimina los valores de ninguna
@@ -263,7 +264,7 @@ def graficador (df):
         fig = px.line(df_plot, x=col_x, y=col_y, color=color_param, title=title, color_discrete_sequence=color_sequence, facet_col=facet_col_param, facet_row=facet_row_param)
     elif chart_type == "Histograma":
         # Selección del tipo de barra (barmode) para histograma
-        barmode = st.selectbox("Tipo de barra", ["grupo", "superpuesto", "relativo"])
+        barmode = st.selectbox("Tipo de barra", ["grupo", "superpuesto", "relativo"], key=f"barmode_{key_suffix}")
         barmode_dict = {"grupo": "group", "superpuesto": "overlay", "relativo": "relative"}
         fig = px.histogram(df_plot, x=col_x, color=color_param, title=title, barmode=barmode_dict[barmode], color_discrete_sequence=color_sequence, facet_col=facet_col_param, facet_row=facet_row_param,category_orders=category_order)
 

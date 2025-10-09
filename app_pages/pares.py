@@ -1099,7 +1099,7 @@ dashboard_transferencia(df)
 st.markdown("---")
 st.header("🎨 Graficador Personalizado")
 st.write("Utiliza esta herramienta para crear gráficos personalizados con cualquier combinación de variables.")
-graficador(df)
+graficador(df, key_suffix="pares_expertos")
 
 # ==========================================
 # INFORMACIÓN TÉCNICA

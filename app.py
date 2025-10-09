@@ -18,12 +18,18 @@ def main():
                 url_path="/intro"
             )
         ],
-        "Graficador Pares": [
+        "Análisis de Datos": [
             st.Page(
                 page="app_pages/pares.py",
-                title="Graficador Pares",
-                icon="📊",
+                title="Pares Expertos",
+                icon="👥",
                 url_path="/pares"
+            ),
+            st.Page(
+                page="app_pages/encuentros_colaborativos.py",
+                title="Encuentros Colaborativos",
+                icon="🤝",
+                url_path="/encuentros_colaborativos"
             )
         ],
     }
