@@ -55,8 +55,8 @@ COLOR_PALETTE = {
     
     # Colores para tipos de datos específicos
     'gender_colors': {
-        'Masculino': '#1DB2E8',
-        'Femenino': '#E91E63',
+        'Masculino': "#119713",
+        'Femenino': "#2E6D41",
         'Otro': '#9C27B0'
     },
     'yes_no_colors': {
@@ -113,8 +113,34 @@ def hallazgos_generales():
     st.markdown("---")
     st.header("📊 Mapa de Calor - Conductas-Momentos")
     
-    url="https://docs.google.com/spreadsheets/d/e/2PACX-1vTpLweVduepr4MGi-VmtH35p9QPKz42V3MwiyRr7e3WILR2wFiI8KruhkytY96M4w/pub?output=csv"
+    # Selector de fase al inicio
+    st.subheader("🔍 Selección de Fase")
+    
+    # Cargar datos temporalmente para obtener las fases disponibles
+    url="https://docs.google.com/spreadsheets/d/e/2PACX-1vQzYORLJ_nV7qv_vP2hrWmdV8Sm2rOpQPSNH9WLKJkJoHyfIOgBsrJu-uh-6_MYDg/pub?output=csv"
+    df_temp = load_data(url)
+    
+    if not df_temp.empty and 'Fase' in df_temp.columns:
+        fases_disponibles = sorted(df_temp['Fase'].dropna().unique())
+        fase_seleccionada = st.selectbox(
+            "Selecciona la fase a analizar:",
+            options=fases_disponibles,
+            help="Escoge la fase específica que deseas analizar en todos los gráficos"
+        )
+        
+        st.markdown("---")
+        st.info(f"📋 **Análisis para la Fase: {fase_seleccionada}**")
+    else:
+        st.warning("No se encontró la columna 'Fase' en los datos o los datos están vacíos.")
+        return
+    
+    # Cargar y filtrar datos por fase seleccionada
     df = load_data(url)
+    if not df.empty and 'Fase' in df.columns:
+        df = df[df['Fase'] == fase_seleccionada].copy()
+    else:
+        st.error("No se pudo filtrar por fase. Verifica que los datos contengan la columna 'Fase'.")
+        return
     
     if df.empty:
         st.warning("No hay datos válidos para el mapa de calor.")
@@ -132,27 +158,19 @@ def hallazgos_generales():
     # Limpiar espacios en blanco en la columna Conducta
     df['Conducta'] = df['Conducta'].astype(str).str.strip()
     
-    # Filtrar EXCLUYENDO los datos donde participante = 'DA' o 'M-Junior'
-    # Y INCLUYENDO solo las Conductas específicas
+    # Filtrar INCLUYENDO solo las Conductas específicas
     Conductas_permitidas = ['Transferencia de la experticia', 'Instrucción centrada en el estudiante', 'Enfoque de género']
     df_filtered = df[
-        (~df['participante'].isin(['DA'])) & 
         (df['Conducta'].isin(Conductas_permitidas))
     ].copy()
     
+    # Filtrar para que solo aparezca un Encuentro único por cada tipo y número de momento
+    df_filtered = df_filtered.drop_duplicates(subset=['Encuentro', 'tipo', 'Número de momento'])
     if df_filtered.empty:
         st.warning("No hay datos válidos después de aplicar los filtros.")
-        st.info(f"Valores únicos en 'participante': {df['participante'].unique().tolist()}")
         st.info(f"Valores únicos en 'Conducta' (limpiados): {df['Conducta'].unique().tolist()}")
         st.info(f"Conductas buscadas: {Conductas_permitidas}")
-        
-        # Mostrar datos de depuración
-        participantes_validos = df[~df['participante'].isin(['DA', 'M-Junior'])]
-        st.info(f"Registros después de filtrar participantes: {len(participantes_validos)}")
-        if len(participantes_validos) > 0:
-            st.info(f"Conductas disponibles en participantes válidos: {participantes_validos['Conducta'].unique().tolist()}")
         return
-    
     # Usar directamente la columna "Número de momento"
     # Crear una tabla de frecuencias para el mapa de calor
     heatmap_data = df_filtered.groupby(['Número de momento', 'tipo']).size().reset_index(name='Frecuencia')
@@ -180,12 +198,19 @@ def hallazgos_generales():
     fig_heatmap.update_layout(
         height=700, 
         yaxis_title="Conductas",
-        font=dict(size=12),
+        font=dict(size=16),  # Aumentar tamaño de fuente general
         xaxis=dict(
             tickmode='array',
             tickvals=list(pivot_data.columns),
             ticktext=[str(int(x)) for x in pivot_data.columns],
-            dtick=1  # Mostrar solo números enteros
+            dtick=1, 
+            tickfont=dict(size=14)  # Tamaño específico para labels del eje X
+        ),
+        yaxis=dict(
+            tickfont=dict(size=14)  # Tamaño específico para labels del eje Y
+        ),
+        title=dict(
+            font=dict(size=18)  # Tamaño del título
         )
     )
     
@@ -250,7 +275,7 @@ def hallazgos_generales():
     ].copy()
     
     # Gráfica de líneas: Momento vs Porcentaje de Encuentros por Participante
-    st.subheader("� Análisis de Líneas: Transferencia de la Experticia por Participante y Momento")
+    st.subheader(" Análisis de Líneas: Transferencia de la Experticia por Participante y Momento")
     
     if not df_puntos.empty and 'Encuentro' in df_puntos.columns and 'participante' in df_puntos.columns and 'tipo' in df_puntos.columns:
         # Calcular el porcentaje por momento, participante y tipo
@@ -271,12 +296,12 @@ def hallazgos_generales():
                     if not df_subset.empty and momento in df_subset['Número de momento'].values:
                         # Hay datos para este momento
                         encuentros_en_momento = df_subset[df_subset['Número de momento'] == momento]['Encuentro'].nunique()
-                        porcentaje = (encuentros_en_momento / max_encuentros) * 100
+                        porcentaje = round((encuentros_en_momento / max_encuentros) * 100, 1)
                         total_obs = len(df_subset[df_subset['Número de momento'] == momento])
                     else:
                         # No hay datos para este momento, usar 0
                         encuentros_en_momento = 0
-                        porcentaje = 0
+                        porcentaje = 0.0
                         total_obs = 0
                     
                     porcentaje_por_participante.append({
@@ -317,7 +342,7 @@ def hallazgos_generales():
             )
             
             fig_lineas.update_layout(
-                height=600,
+                height=400,
                 xaxis=dict(
                     tickmode='linear',
                     dtick=1,
@@ -357,7 +382,7 @@ def hallazgos_generales():
                 tipo = tipos_unicos[0]
                 st.write(f"**{tipo}:**")
                 df_tipo = df_lineas[df_lineas['Tipo'] == tipo]
-                tabla_tipo = df_tipo.pivot(index='Momento', columns='Participante', values='Porcentaje_Encuentros').fillna(0)
+                tabla_tipo = df_tipo.pivot(index='Momento', columns='Participante', values='Porcentaje_Encuentros').fillna(0).round(1)
                 st.dataframe(tabla_tipo, use_container_width=True)
             elif num_tipos == 2:
                 # Dos columnas
@@ -366,7 +391,7 @@ def hallazgos_generales():
                     with (col1 if i == 0 else col2):
                         st.write(f"**{tipo}:**")
                         df_tipo = df_lineas[df_lineas['Tipo'] == tipo]
-                        tabla_tipo = df_tipo.pivot(index='Momento', columns='Participante', values='Porcentaje_Encuentros').fillna(0)
+                        tabla_tipo = df_tipo.pivot(index='Momento', columns='Participante', values='Porcentaje_Encuentros').fillna(0).round(1)
                         st.dataframe(tabla_tipo, use_container_width=True)
             elif num_tipos == 3:
                 # Tres columnas
@@ -376,7 +401,7 @@ def hallazgos_generales():
                     with columnas[i]:
                         st.write(f"**{tipo}:**")
                         df_tipo = df_lineas[df_lineas['Tipo'] == tipo]
-                        tabla_tipo = df_tipo.pivot(index='Momento', columns='Participante', values='Porcentaje_Encuentros').fillna(0)
+                        tabla_tipo = df_tipo.pivot(index='Momento', columns='Participante', values='Porcentaje_Encuentros').fillna(0).round(1)
                         st.dataframe(tabla_tipo, use_container_width=True)
             else:
                 # Más de 3 tipos: usar 2 columnas y distribuir
@@ -385,7 +410,7 @@ def hallazgos_generales():
                     with (col1 if i % 2 == 0 else col2):
                         st.write(f"**{tipo}:**")
                         df_tipo = df_lineas[df_lineas['Tipo'] == tipo]
-                        tabla_tipo = df_tipo.pivot(index='Momento', columns='Participante', values='Porcentaje_Encuentros').fillna(0)
+                        tabla_tipo = df_tipo.pivot(index='Momento', columns='Participante', values='Porcentaje_Encuentros').fillna(0).round(1)
                         st.dataframe(tabla_tipo, use_container_width=True)
                         if i % 2 == 1 or i == len(tipos_unicos) - 1:  # Añadir espacio después de cada fila
                             st.write("")
@@ -395,11 +420,18 @@ def hallazgos_generales():
         st.warning("No hay datos disponibles para 'Transferencia de la experticia' o faltan las columnas necesarias ('Encuentro', 'participante' o 'tipo').")
    
    
-    url_2="https://docs.google.com/spreadsheets/d/e/2PACX-1vTzFwQJLWwU2jMg49j0HDgXEdXLER-EuP2qLGlPI7OuGA0TLQ8sMgc9rnb4lG5GZA/pub?output=csv"
+    url_2="https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ngk1_bT8zj18I7yzTKeI74316aXaUvKgyx8ww8OzjL0l1_1ewFwcJqW3hBFyuw/pub?output=csv"
     df_2 = load_data(url_2)
 
     if df_2.empty:
         st.warning("No hay datos válidos para docentes por sexo.")
+        return
+    
+    # Filtrar por fase seleccionada
+    if 'Fase' in df_2.columns:
+        df_2 = df_2[df_2['Fase'] == fase_seleccionada].copy()
+    else:
+        st.warning("La columna 'Fase' no está disponible en el segundo conjunto de datos.")
         return
     # Verificar que las columnas necesarias existen
     required_columns = ['Número de momento', 'tipo', 'participante', 'Conducta']
@@ -425,136 +457,402 @@ def hallazgos_generales():
         st.info("Las columnas disponibles son: " + ", ".join(df_filtered_genero.columns.tolist()))
         return
     
-    st.subheader("📊 Participación por Tipo y Género")
+    st.subheader("📊 Participación por Conducta y Género")
     
-    # Calcular porcentaje de participación por tipo y género
-    if not df_filtered_genero.empty:
-        # Limpiar y estandarizar valores de género y participante
-        df_filtered_genero['sexo'] = df_filtered_genero['sexo'].astype(str).str.strip().str.title()
-        df_filtered_genero['participante'] = df_filtered_genero['participante'].astype(str).str.strip()
-        
-        # Obtener total de participantes únicos por tipo, género y participante
-        participacion_por_tipo_genero = df_filtered_genero.groupby(['tipo', 'sexo', 'participante'])['nombre'].nunique().reset_index()
-        participacion_por_tipo_genero.columns = ['Tipo', 'Género', 'Participante', 'Participantes_Únicos']
-        
-        # Calcular total de participantes únicos por tipo y participante (para calcular porcentajes)
-        total_por_tipo_participante = df_filtered_genero.groupby(['tipo', 'participante'])['nombre'].nunique().reset_index()
-        total_por_tipo_participante.columns = ['Tipo', 'Participante', 'Total_Participantes']
-        
-        # Fusionar datos para calcular porcentajes
-        participacion_con_total = participacion_por_tipo_genero.merge(total_por_tipo_participante, on=['Tipo', 'Participante'])
-        participacion_con_total['Porcentaje_Participacion'] = (
-            participacion_con_total['Participantes_Únicos'] / 
-            participacion_con_total['Total_Participantes'] * 100
-        )
-        
-        # Crear gráfico de barras agrupadas
-        fig_barras_genero = px.bar(
-            participacion_con_total,
-            x='Tipo',
-            y='Porcentaje_Participacion',
-            color='Género',
-            title="Porcentaje de Participación por Tipo de Conducta, Género y Participante",
-            labels={
-                'Porcentaje_Participacion': 'Porcentaje de Participación (%)',
-                'Tipo': 'Tipo de Conducta',
-                'Género': 'Género'
-            },
-            facet_col='Participante',
-            color_discrete_map=COLOR_PALETTE['gender_colors'],
-            text='Porcentaje_Participacion',
-            barmode='group'
-        )
-        
-        # Personalizar el gráfico
-        fig_barras_genero.update_traces(
-            texttemplate='%{text:.1f}%',
-            textposition='outside'
-        )
-        
-        fig_barras_genero.update_layout(
-            height=600,
-            xaxis_title="Tipo de Conducta",
-            yaxis_title="Porcentaje de Participación (%)",
-            legend=dict(
-                title="Género",
-                orientation="v",
-                yanchor="top",
-                y=1,
-                xanchor="left",
-                x=1.02
-            ),
-            font=dict(size=12),
-            yaxis=dict(range=[0, max(participacion_con_total['Porcentaje_Participacion']) * 1.1])
-        )
-        
-        st.plotly_chart(fig_barras_genero, use_container_width=True, config=chart_config)
-        
-        # Mostrar tabla de datos detallados
-        st.subheader("📋 Datos Detallados de Participación")
-        
-        # Mostrar tabla completa con todas las dimensiones
-        st.dataframe(participacion_con_total, use_container_width=True)
-        
-        # Crear tabla pivote por participante para mejor visualización
-        st.subheader("📊 Resumen por Participante")
-        
-        # Tabla resumen por participante
-        resumen_participante = participacion_con_total.groupby('Participante').agg({
-            'Participantes_Únicos': 'sum',
-            'Total_Participantes': 'first',
-            'Porcentaje_Participacion': 'mean'
-        }).round(2)
-        
-        st.dataframe(resumen_participante, use_container_width=True)
-        
-        # Métricas adicionales
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            total_participantes = df_filtered_genero['nombre'].nunique()
-            st.metric("Total Participantes Únicos", total_participantes)
-        
-        with col2:
-            generos_unicos = df_filtered_genero['sexo'].nunique()
-            st.metric("Géneros Identificados", generos_unicos)
-        
-        with col3:
-            tipos_unicos = df_filtered_genero['tipo'].nunique()
-            st.metric("Tipos de Conducta", tipos_unicos)
-        
-        with col4:
-            participantes_unicos = df_filtered_genero['participante'].nunique()
-            st.metric("Tipos de Participante", participantes_unicos)
-        
-        # Análisis adicional por género
-        st.subheader("🔍 Análisis por Género")
-        
-        # Distribución general por género
-        distribucion_genero = df_filtered_genero.groupby('sexo')['nombre'].nunique().reset_index()
-        distribucion_genero.columns = ['Género', 'Participantes']
-        distribucion_genero['Porcentaje'] = (distribucion_genero['Participantes'] / 
-                                           distribucion_genero['Participantes'].sum() * 100)
-        
-        fig_pie_genero = px.pie(
-            distribucion_genero,
-            values='Porcentaje',
-            names='Género',
-            title="Distribución General por Género",
-            color_discrete_map=COLOR_PALETTE['gender_colors']
-        )
-        fig_pie_genero.update_traces(textinfo='percent+label')
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.plotly_chart(fig_pie_genero, use_container_width=True, config=chart_config)
-        
-        with col2:
-            st.dataframe(distribucion_genero, use_container_width=True)
-    
-    else:
-        st.warning("No hay datos válidos para crear la gráfica de participación por género.")
+    col1, col2 = st.columns(2)
 
+    with col1:
+        # Calcular porcentaje de participación por tipo y género
+        if not df_filtered_genero.empty:
+            # Limpiar y estandarizar valores de género y participante
+            df_filtered_genero['sexo'] = df_filtered_genero['sexo'].astype(str).str.strip().str.title()
+            df_filtered_genero['participante'] = df_filtered_genero['participante'].astype(str).str.strip()
+            
+            # Obtener total de participantes únicos por tipo, género y participante
+            participacion_por_tipo_genero = df_filtered_genero.groupby(['tipo', 'sexo'])['nombre'].nunique().reset_index()
+            participacion_por_tipo_genero.columns = ['Tipo', 'Género', 'Participantes_Únicos']
+            
+            # Calcular total de participantes únicos por tipo y participante (para calcular porcentajes)
+            total_por_tipo_participante = df_filtered_genero.groupby(['tipo'])['nombre'].nunique().reset_index()
+            total_por_tipo_participante.columns = ['Tipo', 'Total_Participantes']
+            
+            # Fusionar datos para calcular porcentajes
+            participacion_con_total = participacion_por_tipo_genero.merge(total_por_tipo_participante, on=['Tipo'])
+            participacion_con_total['Porcentaje_Participacion'] = (
+                participacion_con_total['Participantes_Únicos'] / 
+                participacion_con_total['Total_Participantes'] * 100
+            )
+            
+            # Crear gráfico de barras agrupadas
+            fig_barras_genero = px.bar(
+                participacion_con_total,
+                x='Tipo',
+                y='Porcentaje_Participacion',
+                color='Género',
+                title="Participación por Conducta y Género y todos los Participantes",
+                labels={
+                    'Porcentaje_Participacion': 'Porcentaje de Participación (%)',
+                    'Tipo': 'Tipo de Conducta',
+                    'Género': 'Género'
+                },
+                color_discrete_map=COLOR_PALETTE['gender_colors'],
+                text='Porcentaje_Participacion',
+                barmode='group'
+            )
+            
+            # Personalizar el gráfico
+            fig_barras_genero.update_traces(
+                texttemplate='%{text:.1f}%',
+                textposition='outside'
+            )
+            
+            fig_barras_genero.update_layout(
+                height=600,
+                xaxis_title="Tipo de Conducta",
+                yaxis_title="Porcentaje de Participación (%)",
+                legend=dict(
+                    title="Género",
+                    orientation="v",
+                    yanchor="top",
+                    y=1,
+                    xanchor="left",
+                    x=1.02
+                ),
+                font=dict(size=12),
+                yaxis=dict(range=[0, max(participacion_con_total['Porcentaje_Participacion']) * 1.1])
+            )
+            
+            st.plotly_chart(fig_barras_genero, use_container_width=True, config=chart_config)
+           
+        
+        else:
+            st.warning("No hay datos válidos para crear la gráfica de participación por género.")
+
+    with col2:
+            # Calcular porcentaje de participación por tipo y género
+        if not df_filtered_genero.empty:
+            # Limpiar y estandarizar valores de género y participante
+            df_filtered_genero['sexo'] = df_filtered_genero['sexo'].astype(str).str.strip().str.title()
+            df_filtered_genero['participante'] = df_filtered_genero['participante'].astype(str).str.strip()
+            
+            # Obtener total de participantes únicos por tipo, género y participante
+            participacion_por_tipo_genero = df_filtered_genero.groupby(['tipo', 'sexo', 'participante'])['nombre'].nunique().reset_index()
+            participacion_por_tipo_genero.columns = ['Tipo', 'Género', 'Participante', 'Participantes_Únicos']
+            
+            # Calcular total de participantes únicos por tipo y participante (para calcular porcentajes)
+            total_por_tipo_participante = df_filtered_genero.groupby(['tipo', 'participante'])['nombre'].nunique().reset_index()
+            total_por_tipo_participante.columns = ['Tipo', 'Participante', 'Total_Participantes']
+            
+            # Fusionar datos para calcular porcentajes
+            participacion_con_total = participacion_por_tipo_genero.merge(total_por_tipo_participante, on=['Tipo', 'Participante'])
+            participacion_con_total['Porcentaje_Participacion'] = (
+                participacion_con_total['Participantes_Únicos'] / 
+                participacion_con_total['Total_Participantes'] * 100
+            )
+            
+            # Crear gráfico de barras agrupadas
+            fig_barras_genero = px.bar(
+                participacion_con_total,
+                x='Tipo',
+                y='Porcentaje_Participacion',
+                color='Género',
+                title="Participación por Conducta y Género dividido por Participantes",
+                labels={
+                    'Porcentaje_Participacion': 'Porcentaje de Participación (%)',
+                    'Tipo': 'Tipo de Conducta',
+                    'Género': 'Género'
+                },
+                facet_row='Participante',
+                color_discrete_map=COLOR_PALETTE['gender_colors'],
+                text='Porcentaje_Participacion',
+                barmode='group'
+            )
+            
+            # Personalizar el gráfico
+            fig_barras_genero.update_traces(
+                texttemplate='%{text:.1f}%',
+                textposition='outside'
+            )
+            
+            fig_barras_genero.update_layout(
+                height=600,
+                xaxis_title="Tipo de Conducta",
+                yaxis_title="Porcentaje de Participación (%)",
+                legend=dict(
+                    title="Género",
+                    orientation="v",
+                    yanchor="top",
+                    y=1,
+                    xanchor="left",
+                    x=1.02
+                ),
+                font=dict(size=12),
+                yaxis=dict(range=[0, max(participacion_con_total['Porcentaje_Participacion']) * 1.1])
+            )
+            
+            st.plotly_chart(fig_barras_genero, use_container_width=True, config=chart_config)
+            
+        else:
+            st.warning("No hay datos válidos para crear la gráfica de participación por género.")
+    
+    url_3="https://docs.google.com/spreadsheets/d/e/2PACX-1vSq4YCoKLIOBuBJGv-V4FwZLccdOOFYRjkrNsKrkME7tFeRSC15J2FFD2GjwgbwPg/pub?output=csv"
+    df_3 = load_data(url_3)
+    
+    if not df_3.empty:
+        # Filtrar por fase seleccionada
+        if 'Fase' in df_3.columns:
+            df_3 = df_3[df_3['Fase'] == fase_seleccionada].copy()
+        else:
+            st.warning("La columna 'Fase' no está disponible en el tercer conjunto de datos.")
+            return
+        
+        st.subheader("📊 Análisis de Fortalezas por Encuentro")
+        
+        # Verificar que las columnas necesarias existen
+        required_columns_3 = ['Encuentro', 'pregunta', 'respuesta']
+        missing_columns_3 = [col for col in required_columns_3 if col not in df_3.columns]
+        
+        if missing_columns_3:
+            st.error(f"Columnas faltantes en los datos: {missing_columns_3}")
+            st.info("Las columnas disponibles son: " + ", ".join(df_3.columns.tolist()))
+        else:
+            # Limpiar datos: eliminar filas con Encuentro vacío
+            df_3_clean = df_3[df_3['Encuentro'].notna() & (df_3['Encuentro'] != '')].copy()
+            
+            # Filtrar solo las filas donde 'pregunta' contenga 'Fortaleza'
+            df_3_clean = df_3_clean[df_3_clean['pregunta'].str.contains('Fortaleza', case=False, na=False)].copy()
+            
+            if df_3_clean.empty:
+                st.warning("No hay datos válidos después de filtrar por 'Fortaleza'.")
+                return
+            
+            # Extraer número del encuentro para ordenar correctamente
+            df_3_clean['Encuentro_Num'] = df_3_clean['Encuentro'].str.extract('(\d+)').astype(int)
+            
+            # Contar encuentros únicos por respuesta
+            conteo_por_pregunta = df_3_clean.groupby('respuesta')['Encuentro'].nunique().reset_index()
+            conteo_por_pregunta.columns = ['Respuesta', 'Numero_de_encuentros']
+            
+            # Función para tomar solo las primeras palabras
+            def primeras_palabras(texto, num_palabras=3):
+                palabras = texto.split()
+                if len(palabras) > num_palabras:
+                    return " ".join(palabras[:num_palabras]) + "..."
+                return texto
+            
+            # Aplicar función a las respuestas
+            conteo_por_pregunta['Respuesta_Corta'] = conteo_por_pregunta['Respuesta'].apply(lambda x: primeras_palabras(x, 3))
+            
+            # Ordenar por número de encuentros de mayor a menor
+            conteo_por_pregunta = conteo_por_pregunta.sort_values('Numero_de_encuentros', ascending=True)
+            
+            # Crear el gráfico de barras vertical
+            fig_condiciones = px.bar(
+                conteo_por_pregunta,
+                x='Respuesta_Corta',
+                y='Numero_de_encuentros',
+                title="Número de Encuentros por Fortaleza",
+                labels={
+                    'Numero_de_encuentros': 'Número de encuentros',
+                    'Respuesta_Corta': 'Fortaleza'
+                },
+                color='Numero_de_encuentros',
+                color_continuous_scale=COLOR_PALETTE['green_scale'],
+                text='Numero_de_encuentros',
+                hover_data={'Respuesta': True, 'Respuesta_Corta': False}  # Mostrar texto completo en hover
+            )
+            
+            # Personalizar el gráfico
+            fig_condiciones.update_traces(
+                texttemplate='%{text}',
+                textposition='outside'
+            )
+            
+            fig_condiciones.update_layout(
+                height=400,  # Aumentar altura del gráfico
+                xaxis_title="Fortalezas",
+                yaxis_title="Número de encuentros",
+                showlegend=False,
+                font=dict(size=12),
+                yaxis=dict(
+                    range=[0, max(conteo_por_pregunta['Numero_de_encuentros']) * 1.1]
+                ),
+                xaxis=dict(
+                    tickangle=0,  # Etiquetas horizontales (sin diagonal)
+                    tickfont=dict(size=10),  # Tamaño de fuente legible
+                    automargin=True  # Ajuste automático de márgenes
+                ),
+                margin=dict(b=120, l=50, r=50, t=80)  # Márgenes ajustados
+            )
+            
+            st.plotly_chart(fig_condiciones, use_container_width=True, config=chart_config)
+        
+        
+        
+        st.subheader("📊 Análisis de Condiciones por Encuentro")
+        
+        # Verificar que las columnas necesarias existen
+        required_columns_3 = ['Encuentro', 'pregunta', 'respuesta']
+        missing_columns_3 = [col for col in required_columns_3 if col not in df_3.columns]
+        
+        if missing_columns_3:
+            st.error(f"Columnas faltantes en los datos: {missing_columns_3}")
+            st.info("Las columnas disponibles son: " + ", ".join(df_3.columns.tolist()))
+        else:
+            # Limpiar datos: eliminar filas con Encuentro vacío
+            df_3_clean = df_3[df_3['Encuentro'].notna() & (df_3['Encuentro'] != '')].copy()
+            
+            # Filtrar solo las filas donde 'pregunta' contenga 'Condicion '
+            df_3_clean = df_3_clean[df_3_clean['pregunta'].str.contains('Condicion', case=False, na=False)].copy()
+            
+            if df_3_clean.empty:
+                st.warning("No hay datos válidos después de filtrar por 'Condicion '.")
+                return
+            
+            # Extraer número del encuentro para ordenar correctamente
+            df_3_clean['Encuentro_Num'] = df_3_clean['Encuentro'].str.extract('(\d+)').astype(int)
+            
+            # Contar encuentros únicos por respuesta
+            conteo_por_pregunta = df_3_clean.groupby('respuesta')['Encuentro'].nunique().reset_index()
+            conteo_por_pregunta.columns = ['Respuesta', 'Numero_de_encuentros']
+            
+            # Función para tomar solo las primeras palabras
+            def primeras_palabras(texto, num_palabras=3):
+                palabras = texto.split()
+                if len(palabras) > num_palabras:
+                    return " ".join(palabras[:num_palabras]) + "..."
+                return texto
+            
+            # Aplicar función a las respuestas
+            conteo_por_pregunta['Respuesta_Corta'] = conteo_por_pregunta['Respuesta'].apply(lambda x: primeras_palabras(x, 3))
+            
+            # Ordenar por número de encuentros de mayor a menor
+            conteo_por_pregunta = conteo_por_pregunta.sort_values('Numero_de_encuentros', ascending=True)
+            
+            # Crear el gráfico de barras vertical
+            fig_condiciones = px.bar(
+                conteo_por_pregunta,
+                x='Respuesta_Corta',
+                y='Numero_de_encuentros',
+                title="Número de Encuentros por Condición",
+                labels={
+                    'Numero_de_encuentros': 'Número de encuentros',
+                    'Respuesta_Corta': 'Condición'
+                },
+                color='Numero_de_encuentros',
+                color_continuous_scale=COLOR_PALETTE['green_scale'],
+                text='Numero_de_encuentros',
+                hover_data={'Respuesta': True, 'Respuesta_Corta': False}  # Mostrar texto completo en hover
+            )
+            
+            # Personalizar el gráfico
+            fig_condiciones.update_traces(
+                texttemplate='%{text}',
+                textposition='outside'
+            )
+            
+            fig_condiciones.update_layout(
+                height=400,  # Aumentar altura del gráfico
+                xaxis_title="Condiciones",
+                yaxis_title="Número de encuentros",
+                showlegend=False,
+                font=dict(size=12),
+                yaxis=dict(
+                    range=[0, max(conteo_por_pregunta['Numero_de_encuentros']) * 1.1]
+                ),
+                xaxis=dict(
+                    tickangle=0,  # Etiquetas horizontales (sin diagonal)
+                    tickfont=dict(size=10),  # Tamaño de fuente legible
+                    automargin=True  # Ajuste automático de márgenes
+                ),
+                margin=dict(b=120, l=50, r=50, t=80)  # Márgenes ajustados
+            )
+            
+            st.plotly_chart(fig_condiciones, use_container_width=True, config=chart_config)
+        
+        st.subheader("📊 Análisis de Debilidades por Encuentro")
+        
+        # Verificar que las columnas necesarias existen
+        required_columns_3 = ['Encuentro', 'pregunta', 'respuesta']
+        missing_columns_3 = [col for col in required_columns_3 if col not in df_3.columns]
+        
+        if missing_columns_3:
+            st.error(f"Columnas faltantes en los datos: {missing_columns_3}")
+            st.info("Las columnas disponibles son: " + ", ".join(df_3.columns.tolist()))
+        else:
+            # Limpiar datos: eliminar filas con Encuentro vacío
+            df_3_clean = df_3[df_3['Encuentro'].notna() & (df_3['Encuentro'] != '')].copy()
+            
+            # Filtrar solo las filas donde 'pregunta' contenga 'Debilidad'
+            df_3_clean = df_3_clean[df_3_clean['pregunta'].str.contains('Debilidad', case=False, na=False)].copy()
+            
+            if df_3_clean.empty:
+                st.warning("No hay datos válidos después de filtrar por 'Debilidad'.")
+                return
+            
+            # Extraer número del encuentro para ordenar correctamente
+            df_3_clean['Encuentro_Num'] = df_3_clean['Encuentro'].str.extract('(\d+)').astype(int)
+            
+            # Contar encuentros únicos por respuesta
+            conteo_por_pregunta = df_3_clean.groupby('respuesta')['Encuentro'].nunique().reset_index()
+            conteo_por_pregunta.columns = ['Respuesta', 'Numero_de_encuentros']
+            
+            # Función para tomar solo las primeras palabras
+            def primeras_palabras(texto, num_palabras=3):
+                palabras = texto.split()
+                if len(palabras) > num_palabras:
+                    return " ".join(palabras[:num_palabras]) + "..."
+                return texto
+            
+            # Aplicar función a las respuestas
+            conteo_por_pregunta['Respuesta_Corta'] = conteo_por_pregunta['Respuesta'].apply(lambda x: primeras_palabras(x, 3))
+            
+            # Ordenar por número de encuentros de mayor a menor
+            conteo_por_pregunta = conteo_por_pregunta.sort_values('Numero_de_encuentros', ascending=True)
+            
+            # Crear el gráfico de barras vertical
+            fig_condiciones = px.bar(
+                conteo_por_pregunta,
+                x='Respuesta_Corta',
+                y='Numero_de_encuentros',
+                title="Número de Encuentros por Debilidad",
+                labels={
+                    'Numero_de_encuentros': 'Número de encuentros',
+                    'Respuesta_Corta': 'Debilidad'
+                },
+                color='Numero_de_encuentros',
+                color_continuous_scale=COLOR_PALETTE['green_scale'],
+                text='Numero_de_encuentros',
+                hover_data={'Respuesta': True, 'Respuesta_Corta': False}  # Mostrar texto completo en hover
+            )
+            
+            # Personalizar el gráfico
+            fig_condiciones.update_traces(
+                texttemplate='%{text}',
+                textposition='outside'
+            )
+            
+            fig_condiciones.update_layout(
+                height=400,  # Aumentar altura del gráfico
+                xaxis_title="Debilidades",
+                yaxis_title="Número de encuentros",
+                showlegend=False,
+                font=dict(size=12),
+                yaxis=dict(
+                    range=[0, max(conteo_por_pregunta['Numero_de_encuentros']) * 1.1]
+                ),
+                xaxis=dict(
+                    tickangle=0,  # Etiquetas horizontales (sin diagonal)
+                    tickfont=dict(size=10),  # Tamaño de fuente legible
+                    automargin=True  # Ajuste automático de márgenes
+                ),
+                margin=dict(b=120, l=50, r=50, t=80)  # Márgenes ajustados
+            )
+            
+            st.plotly_chart(fig_condiciones, use_container_width=True, config=chart_config)
+           
+    else:
+        st.warning("No hay datos válidos en el tercer conjunto de datos.")
     
 
 def dashboard_actitudes_colaboracion_ampliado(df):
