@@ -1,5 +1,4 @@
-# Coding Hubs 2025
-
+# Coding Hubs 2025.
 ## Instalation
 
 1. Clone the repo
