@@ -1,0 +1,12 @@
+version: '2.4'
+
+services:
+  codinghubs:
+    environment:
+      - DEPLOY_ENV=prod
+    container_name: codinghubs
+    build:
+      dockerfile: ./Dockerfile
+      context: ./
+    ports:
+      - '8520:8501'
