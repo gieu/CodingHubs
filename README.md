@@ -1,11 +1,11 @@
-# Colombia Programa 2024 - 2027.
+# Coding Hubs 2025
 
 ## Instalation
 
 1. Clone the repo
 
    ```bash
-   git clone https://github.com/gieu/colprograma.git
+   
    ```
 
 2. Install the packages
