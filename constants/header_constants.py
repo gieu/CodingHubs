@@ -1,5 +1,6 @@
 import os
 import actions.utils as utils
+import streamlit as st
 
 # Ruta del logo del navbar
 RUTA_LOGO_NAVBAR = "./assets/recursos-01.png"
@@ -18,6 +19,7 @@ header {visibility: hidden;}
 """
 
 deploy_env = os.getenv("DEPLOY_ENV", "local")
+print(f"Deploy environment: {deploy_env}")
 BASE_URL = "/"
 if deploy_env == 'prod':
     BASE_URL = "/codinghubs/"
@@ -213,3 +215,23 @@ def generar_css_personalizado(color_fondo_navbar=DEFAULT_COLOR_FONDO_NAVBAR):
     }}
     </style>
     """
+
+def header(color_fondo_navbar=DEFAULT_COLOR_FONDO_NAVBAR):
+    """Genera el header personalizado con el color de fondo especificado."""
+    st.set_page_config(layout="wide")
+
+    # Ocultar elementos de Streamlit
+    st.markdown(HIDE_STREAMLIT_STYLE, unsafe_allow_html=True)
+
+    # Generar el CSS personalizado con el color deseado
+    custom_css = generar_css_personalizado(color_fondo_navbar)
+
+    # Aplicar el CSS en Streamlit
+    st.markdown(custom_css, unsafe_allow_html=True)
+
+    # Navbar personalizado con logo
+    navbar = NAVBAR_TEMPLATE.format(
+        LOGO_NAVBAR_BASE64=LOGO_NAVBAR_BASE64,
+        BASE_URL=BASE_URL
+    )
+    st.markdown(navbar, unsafe_allow_html=True)

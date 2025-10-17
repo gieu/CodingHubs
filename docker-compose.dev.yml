@@ -2,6 +2,8 @@ version: '2.4'
 
 services:
   codinghubs_dev:
+    environment:
+      - DEPLOY_ENV=prod
     container_name: codinghubs_dev
     build:
       dockerfile: ./Dockerfile
