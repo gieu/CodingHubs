@@ -9,19 +9,12 @@ def main():
                 icon = "🏠",
                 url_path="/home"
             )
-            ],       
-        "¿Que es Colombia Programa?": [
-            st.Page(
-                page="app_pages/intro.py",
-                title="¿Que es Colombia Programa?",
-                icon="❓",
-                url_path="/intro"
-            )
+            
         ],
         "Análisis de Datos": [
             st.Page(
                 page="app_pages/pares.py",
-                title="Pares Expertos",
+                title="Codinghub Masters",
                 icon="👥",
                 url_path="/pares"
             ),

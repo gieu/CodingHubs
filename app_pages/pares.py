@@ -1080,7 +1080,7 @@ def mostrar_paleta_colores():
 # ==========================================
 # APLICACIÓN PRINCIPAL
 # ==========================================
-st.title("📚 Dashboard Integral - Pares Expertos")
+st.title("📚 Dashboard Integral - Codinghub Masters")
 
 # Mostrar todos los dashboards en la misma página
 dashboard_q19(df)

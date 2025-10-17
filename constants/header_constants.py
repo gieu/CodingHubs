@@ -19,18 +19,18 @@ header {visibility: hidden;}
 NAVBAR_TEMPLATE = """
 <div class="navbar">
     <div class="logo">
-        <a href="/colpro_dev/" target="_self" class="logo-link">
-            <img src="data:image/png;base64,{LOGO_NAVBAR_BASE64}" alt="Logo Colombia Programa" class="logo-img">
+        <a href="/" target="_self" class="logo-link">
+            <img src="data:image/png;base64,{LOGO_NAVBAR_BASE64}" alt="Logo" class="logo-img">
             <span class="logo-text"></span>
         </a>
     </div>
     <div class="nav-links">
-        <a href="/colpro_dev/" target="_self">Inicio</a>
+        <a href="/" target="_self">Inicio</a>
         <div class="dropdown">
             <a href="#" class="dropbtn">Análisis <span class="arrow-down">▼</span></a>
             <div class="dropdown-content">
-                <a href="/colpro_dev/pares" target="_self">Pares Expertos</a>
-                <a href="/colpro_dev/encuentros_colaborativos" target="_self">Encuentros Colaborativos</a>
+                <a href="/pares" target="_self">Pares Expertos</a>
+                <a href="/encuentros_colaborativos" target="_self">Encuentros Colaborativos</a>
             </div>
         </div>
     </div>
