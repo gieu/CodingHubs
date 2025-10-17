@@ -18,22 +18,22 @@ header {visibility: hidden;}
 """
 
 deploy_env = os.getenv("DEPLOY_ENV", "local")
-match deploy_env:
-    case "prod":
-        BASE_URL = "/codinghubs/"
-    case _:
-        BASE_URL = "/"
+BASE_URL = "/"
+if deploy_env == 'prod':
+    BASE_URL = "/codinghubs/"
+else:
+    BASE_URL = "/"
 
 NAVBAR_TEMPLATE = """
 <div class="navbar">
     <div class="logo">
-        <a href="/" target="_self" class="logo-link">
+        <a href="{BASE_URL}" target="_self" class="logo-link">
             <img src="data:image/png;base64,{LOGO_NAVBAR_BASE64}" alt="Logo" class="logo-img">
             <span class="logo-text"></span>
         </a>
     </div>
     <div class="nav-links">
-        <a href="/" target="_self">Inicio</a>
+        <a href="{BASE_URL}" target="_self">Inicio</a>
         <div class="dropdown">
             <a href="#" class="dropbtn">Análisis <span class="arrow-down">▼</span></a>
             <div class="dropdown-content">
