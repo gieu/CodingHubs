@@ -56,7 +56,7 @@ COLOR_PALETTE = {
     # Colores para tipos de datos específicos
     'gender_colors': {
         'Masculino': "#119713",
-        'Femenino': "#2E6D41",
+        'Femenino': "#FA960B",
         'Otro': '#9C27B0'
     },
     'yes_no_colors': {
@@ -122,14 +122,17 @@ def hallazgos_generales():
     
     if not df_temp.empty and 'Fase' in df_temp.columns:
         fases_disponibles = sorted(df_temp['Fase'].dropna().unique())
+        # Agregar opción "Todas las fases"
+        opciones_fase = ["Todas las fases"] + list(fases_disponibles)
+        
         fase_seleccionada = st.selectbox(
             "Selecciona la fase a analizar:",
-            options=fases_disponibles,
-            help="Escoge la fase específica que deseas analizar en todos los gráficos"
+            options=opciones_fase,
+            help="Escoge la fase específica que deseas analizar en todos los gráficos, o selecciona 'Todas las fases' para incluir ambas"
         )
         
         st.markdown("---")
-        st.info(f"📋 **Análisis para la Fase: {fase_seleccionada}**")
+        st.info(f"📋 **Análisis para: {fase_seleccionada}**")
     else:
         st.warning("No se encontró la columna 'Fase' en los datos o los datos están vacíos.")
         return
@@ -137,7 +140,12 @@ def hallazgos_generales():
     # Cargar y filtrar datos por fase seleccionada
     df = load_data(url)
     if not df.empty and 'Fase' in df.columns:
-        df = df[df['Fase'] == fase_seleccionada].copy()
+        if fase_seleccionada == "Todas las fases":
+            # No filtrar, mantener todas las fases
+            df = df.copy()
+        else:
+            # Filtrar por la fase específica seleccionada
+            df = df[df['Fase'] == fase_seleccionada].copy()
     else:
         st.error("No se pudo filtrar por fase. Verifica que los datos contengan la columna 'Fase'.")
         return
@@ -165,7 +173,7 @@ def hallazgos_generales():
     ].copy()
     
     # Filtrar para que solo aparezca un Encuentro único por cada tipo y número de momento
-    df_filtered = df_filtered.drop_duplicates(subset=['Encuentro', 'tipo', 'Número de momento'])
+    df_filtered = df_filtered.drop_duplicates(subset=['Encuentro', 'tipo', 'Número de momento','Fase'])
     if df_filtered.empty:
         st.warning("No hay datos válidos después de aplicar los filtros.")
         st.info(f"Valores únicos en 'Conducta' (limpiados): {df['Conducta'].unique().tolist()}")
@@ -229,27 +237,34 @@ def hallazgos_generales():
         # Gráfico de barras: Frecuencia por momento (Conductas específicas)
         freq_por_momento = df_filtered.groupby('Número de momento').size().reset_index(name='Total_Observaciones')
         
+        # Calcular el total general para obtener porcentajes
+        total_general = freq_por_momento['Total_Observaciones'].sum()
+        freq_por_momento['Porcentaje'] = (freq_por_momento['Total_Observaciones'] / total_general * 100).round(1)
+        
         fig_bar_momentos = px.bar(
             freq_por_momento,
             x='Número de momento',
-            y='Total_Observaciones',
-            title="Total de conductas observadas por momento",
-            labels={'Número de momento': 'Número de Momento', 'Total_Observaciones': 'Cantidad de Observaciones'},
-            color='Total_Observaciones',
+            y='Porcentaje',
+            title="Porcentaje de conductas observadas por momento",
+            labels={'Número de momento': 'Número de Momento', 'Porcentaje': 'Porcentaje (%)'},
+            color='Porcentaje',
             color_continuous_scale=COLOR_PALETTE['green_scale'],
-            text='Total_Observaciones'
+            text='Porcentaje'
         )
-        fig_bar_momentos.update_traces(texttemplate='%{text}', textposition='outside')
+        fig_bar_momentos.update_traces(texttemplate='%{text}%', textposition='outside')
         fig_bar_momentos.update_layout(
             showlegend=False, 
             height=400,
             xaxis=dict(
-                tickmode='linear',
-                dtick=1  # Mostrar solo números enteros
+            tickmode='linear',
+            dtick=1  # Mostrar solo números enteros
+            ),
+            yaxis=dict(
+            title="Porcentaje (%)",
+            range=[0, max(freq_por_momento['Porcentaje']) * 1.1]
             )
         )
         st.plotly_chart(fig_bar_momentos, use_container_width=True, config=chart_config)
-    
     with col2:
         # Gráfico de barras: Frecuencia por tipo (Conductas específicas)
         freq_por_tipo = df_filtered.groupby('tipo').size().reset_index(name='Total_Observaciones').sort_values('Total_Observaciones', ascending=True)
@@ -429,7 +444,11 @@ def hallazgos_generales():
     
     # Filtrar por fase seleccionada
     if 'Fase' in df_2.columns:
-        df_2 = df_2[df_2['Fase'] == fase_seleccionada].copy()
+        if fase_seleccionada == "Todas las fases":
+            # No filtrar, mantener todas las fases
+            df_2 = df_2.copy()
+        else:
+            df_2 = df_2[df_2['Fase'] == fase_seleccionada].copy()
     else:
         st.warning("La columna 'Fase' no está disponible en el segundo conjunto de datos.")
         return
@@ -601,7 +620,11 @@ def hallazgos_generales():
     if not df_3.empty:
         # Filtrar por fase seleccionada
         if 'Fase' in df_3.columns:
-            df_3 = df_3[df_3['Fase'] == fase_seleccionada].copy()
+            if fase_seleccionada == "Todas las fases":
+                # No filtrar, mantener todas las fases
+                df_3 = df_3.copy()
+            else:
+                df_3 = df_3[df_3['Fase'] == fase_seleccionada].copy()
         else:
             st.warning("La columna 'Fase' no está disponible en el tercer conjunto de datos.")
             return
@@ -629,10 +652,16 @@ def hallazgos_generales():
             # Extraer número del encuentro para ordenar correctamente
             df_3_clean['Encuentro_Num'] = df_3_clean['Encuentro'].str.extract('(\d+)').astype(int)
             
-            # Contar encuentros únicos por respuesta
-            conteo_por_pregunta = df_3_clean.groupby('respuesta')['Encuentro'].nunique().reset_index()
-            conteo_por_pregunta.columns = ['Respuesta', 'Numero_de_encuentros']
+            # Crear identificador único considerando Encuentro + Fase para evitar duplicados entre fases
+            if 'Fase' in df_3_clean.columns:
+                df_3_clean['Encuentro_Fase_Unico'] = df_3_clean['Encuentro'].astype(str) + '_' + df_3_clean['Fase'].astype(str)
+                # Contar encuentros únicos por respuesta considerando fase
+                conteo_por_pregunta = df_3_clean.groupby('respuesta')['Encuentro_Fase_Unico'].nunique().reset_index()
+            else:
+                # Fallback si no hay columna Fase
+                conteo_por_pregunta = df_3_clean.groupby('respuesta')['Encuentro'].nunique().reset_index()
             
+            conteo_por_pregunta.columns = ['Respuesta', 'Numero_de_encuentros']
             # Función para tomar solo las primeras palabras
             def primeras_palabras(texto, num_palabras=3):
                 palabras = texto.split()
@@ -646,19 +675,20 @@ def hallazgos_generales():
             # Ordenar por número de encuentros de mayor a menor
             conteo_por_pregunta = conteo_por_pregunta.sort_values('Numero_de_encuentros', ascending=True)
             
-            # Crear el gráfico de barras vertical
+            # Crear el gráfico de barras horizontal
             fig_condiciones = px.bar(
                 conteo_por_pregunta,
-                x='Respuesta_Corta',
-                y='Numero_de_encuentros',
+                x='Numero_de_encuentros',
+                y='Respuesta_Corta',
                 title="Número de Encuentros por Fortaleza",
                 labels={
                     'Numero_de_encuentros': 'Número de encuentros',
                     'Respuesta_Corta': 'Fortaleza'
                 },
                 color='Numero_de_encuentros',
-                color_continuous_scale=COLOR_PALETTE['green_scale'],
+                color_continuous_scale=COLOR_PALETTE['blue_scale'],
                 text='Numero_de_encuentros',
+                orientation='h',
                 hover_data={'Respuesta': True, 'Respuesta_Corta': False}  # Mostrar texto completo en hover
             )
             
@@ -670,19 +700,18 @@ def hallazgos_generales():
             
             fig_condiciones.update_layout(
                 height=400,  # Aumentar altura del gráfico
-                xaxis_title="Fortalezas",
-                yaxis_title="Número de encuentros",
+                yaxis_title="Fortalezas",
+                xaxis_title="Número de encuentros",
                 showlegend=False,
                 font=dict(size=12),
-                yaxis=dict(
+                xaxis=dict(
                     range=[0, max(conteo_por_pregunta['Numero_de_encuentros']) * 1.1]
                 ),
-                xaxis=dict(
-                    tickangle=0,  # Etiquetas horizontales (sin diagonal)
+                yaxis=dict(
                     tickfont=dict(size=10),  # Tamaño de fuente legible
                     automargin=True  # Ajuste automático de márgenes
                 ),
-                margin=dict(b=120, l=50, r=50, t=80)  # Márgenes ajustados
+                margin=dict(l=150, r=50, t=80, b=50)  # Márgenes ajustados para barras horizontales
             )
             
             st.plotly_chart(fig_condiciones, use_container_width=True, config=chart_config)
@@ -712,8 +741,15 @@ def hallazgos_generales():
             # Extraer número del encuentro para ordenar correctamente
             df_3_clean['Encuentro_Num'] = df_3_clean['Encuentro'].str.extract('(\d+)').astype(int)
             
-            # Contar encuentros únicos por respuesta
-            conteo_por_pregunta = df_3_clean.groupby('respuesta')['Encuentro'].nunique().reset_index()
+            # Crear identificador único considerando Encuentro + Fase para evitar duplicados entre fases
+            if 'Fase' in df_3_clean.columns:
+                df_3_clean['Encuentro_Fase_Unico'] = df_3_clean['Encuentro'].astype(str) + '_' + df_3_clean['Fase'].astype(str)
+                # Contar encuentros únicos por respuesta considerando fase
+                conteo_por_pregunta = df_3_clean.groupby('respuesta')['Encuentro_Fase_Unico'].nunique().reset_index()
+            else:
+                # Fallback si no hay columna Fase
+                conteo_por_pregunta = df_3_clean.groupby('respuesta')['Encuentro'].nunique().reset_index()
+            
             conteo_por_pregunta.columns = ['Respuesta', 'Numero_de_encuentros']
             
             # Función para tomar solo las primeras palabras
@@ -729,19 +765,20 @@ def hallazgos_generales():
             # Ordenar por número de encuentros de mayor a menor
             conteo_por_pregunta = conteo_por_pregunta.sort_values('Numero_de_encuentros', ascending=True)
             
-            # Crear el gráfico de barras vertical
+            # Crear el gráfico de barras horizontal
             fig_condiciones = px.bar(
                 conteo_por_pregunta,
-                x='Respuesta_Corta',
-                y='Numero_de_encuentros',
+                x='Numero_de_encuentros',
+                y='Respuesta_Corta',
                 title="Número de Encuentros por Condición",
                 labels={
                     'Numero_de_encuentros': 'Número de encuentros',
                     'Respuesta_Corta': 'Condición'
                 },
                 color='Numero_de_encuentros',
-                color_continuous_scale=COLOR_PALETTE['green_scale'],
+                color_continuous_scale=COLOR_PALETTE['blue_scale'],
                 text='Numero_de_encuentros',
+                orientation='h',
                 hover_data={'Respuesta': True, 'Respuesta_Corta': False}  # Mostrar texto completo en hover
             )
             
@@ -753,19 +790,18 @@ def hallazgos_generales():
             
             fig_condiciones.update_layout(
                 height=400,  # Aumentar altura del gráfico
-                xaxis_title="Condiciones",
-                yaxis_title="Número de encuentros",
+                yaxis_title="Condiciones",
+                xaxis_title="Número de encuentros",
                 showlegend=False,
                 font=dict(size=12),
-                yaxis=dict(
+                xaxis=dict(
                     range=[0, max(conteo_por_pregunta['Numero_de_encuentros']) * 1.1]
                 ),
-                xaxis=dict(
-                    tickangle=0,  # Etiquetas horizontales (sin diagonal)
+                yaxis=dict(
                     tickfont=dict(size=10),  # Tamaño de fuente legible
                     automargin=True  # Ajuste automático de márgenes
                 ),
-                margin=dict(b=120, l=50, r=50, t=80)  # Márgenes ajustados
+                margin=dict(l=150, r=50, t=80, b=50)  # Márgenes ajustados para barras horizontales
             )
             
             st.plotly_chart(fig_condiciones, use_container_width=True, config=chart_config)
@@ -793,8 +829,15 @@ def hallazgos_generales():
             # Extraer número del encuentro para ordenar correctamente
             df_3_clean['Encuentro_Num'] = df_3_clean['Encuentro'].str.extract('(\d+)').astype(int)
             
-            # Contar encuentros únicos por respuesta
-            conteo_por_pregunta = df_3_clean.groupby('respuesta')['Encuentro'].nunique().reset_index()
+            # Crear identificador único considerando Encuentro + Fase para evitar duplicados entre fases
+            if 'Fase' in df_3_clean.columns:
+                df_3_clean['Encuentro_Fase_Unico'] = df_3_clean['Encuentro'].astype(str) + '_' + df_3_clean['Fase'].astype(str)
+                # Contar encuentros únicos por respuesta considerando fase
+                conteo_por_pregunta = df_3_clean.groupby('respuesta')['Encuentro_Fase_Unico'].nunique().reset_index()
+            else:
+                # Fallback si no hay columna Fase
+                conteo_por_pregunta = df_3_clean.groupby('respuesta')['Encuentro'].nunique().reset_index()
+            
             conteo_por_pregunta.columns = ['Respuesta', 'Numero_de_encuentros']
             
             # Función para tomar solo las primeras palabras
@@ -810,19 +853,20 @@ def hallazgos_generales():
             # Ordenar por número de encuentros de mayor a menor
             conteo_por_pregunta = conteo_por_pregunta.sort_values('Numero_de_encuentros', ascending=True)
             
-            # Crear el gráfico de barras vertical
+            # Crear el gráfico de barras horizontal
             fig_condiciones = px.bar(
                 conteo_por_pregunta,
-                x='Respuesta_Corta',
-                y='Numero_de_encuentros',
+                x='Numero_de_encuentros',
+                y='Respuesta_Corta',
                 title="Número de Encuentros por Debilidad",
                 labels={
                     'Numero_de_encuentros': 'Número de encuentros',
                     'Respuesta_Corta': 'Debilidad'
                 },
                 color='Numero_de_encuentros',
-                color_continuous_scale=COLOR_PALETTE['green_scale'],
+                color_continuous_scale=COLOR_PALETTE['blue_scale'],
                 text='Numero_de_encuentros',
+                orientation='h',
                 hover_data={'Respuesta': True, 'Respuesta_Corta': False}  # Mostrar texto completo en hover
             )
             
@@ -834,19 +878,18 @@ def hallazgos_generales():
             
             fig_condiciones.update_layout(
                 height=400,  # Aumentar altura del gráfico
-                xaxis_title="Debilidades",
-                yaxis_title="Número de encuentros",
+                yaxis_title="Debilidades",
+                xaxis_title="Número de encuentros",
                 showlegend=False,
                 font=dict(size=12),
-                yaxis=dict(
+                xaxis=dict(
                     range=[0, max(conteo_por_pregunta['Numero_de_encuentros']) * 1.1]
                 ),
-                xaxis=dict(
-                    tickangle=0,  # Etiquetas horizontales (sin diagonal)
+                yaxis=dict(
                     tickfont=dict(size=10),  # Tamaño de fuente legible
                     automargin=True  # Ajuste automático de márgenes
                 ),
-                margin=dict(b=120, l=50, r=50, t=80)  # Márgenes ajustados
+                margin=dict(l=150, r=50, t=80, b=50)  # Márgenes ajustados para barras horizontales
             )
             
             st.plotly_chart(fig_condiciones, use_container_width=True, config=chart_config)
