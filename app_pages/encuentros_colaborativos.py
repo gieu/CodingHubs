@@ -7,7 +7,7 @@ from actions.chart_actions import graficador
 from constants.footer_constants import FOOTER_HTML, IMAGENES_BASE64
 from constants.header_constants import LOGO_NAVBAR_BASE64, HIDE_STREAMLIT_STYLE, NAVBAR_TEMPLATE, generar_css_personalizado
 from utils.chart_config import get_chart_config
-
+from constants.header_constants import header
 # ==========================================
 # CONFIGURACIÓN INICIAL
 # ==========================================
@@ -87,9 +87,7 @@ custom_css = generar_css_personalizado(color_fondo_navbar)
 st.markdown(custom_css, unsafe_allow_html=True)
 
 # Crear navbar
-navbar = NAVBAR_TEMPLATE.format(LOGO_NAVBAR_BASE64=LOGO_NAVBAR_BASE64)
-st.markdown(navbar, unsafe_allow_html=True)
-
+header()
 # ==========================================
 # CARGA DE DATOS
 # ==========================================

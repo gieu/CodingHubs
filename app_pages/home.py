@@ -4,7 +4,7 @@ from constants.footer_constants import FOOTER_HTML, IMAGENES_BASE64
 from constants.header_constants import  LOGO_NAVBAR_BASE64,HIDE_STREAMLIT_STYLE, NAVBAR_TEMPLATE, generar_css_personalizado
 from actions.home_actions import mostrar_imagen, centrar_texto, obtener_datos_nodos, obtener_datos_mapa
 from widgets.mapa_widget import dibujar_mapa
-
+from constants.header_constants import header
 # Configuración de la página
 st.set_page_config(
     layout="wide",
@@ -18,12 +18,7 @@ custom_css = generar_css_personalizado(color_fondo_navbar)
 
 # Aplicar el CSS en Streamlit
 st.markdown(custom_css, unsafe_allow_html=True)
-
-# Navbar personalizado con logo
-navbar = NAVBAR_TEMPLATE.format(LOGO_NAVBAR_BASE64=LOGO_NAVBAR_BASE64)
-# Mostrar el navbar
-st.markdown(navbar, unsafe_allow_html=True)
-
+header()
 mostrar_imagen(BANNER_IMG, use_container_width=True)
 # Título y descripcion
 centrar_texto(TITULO,"h1")
