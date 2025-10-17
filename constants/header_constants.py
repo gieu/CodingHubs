@@ -1,3 +1,4 @@
+import os
 import actions.utils as utils
 
 # Ruta del logo del navbar
@@ -16,6 +17,13 @@ header {visibility: hidden;}
 </style>
 """
 
+deploy_env = os.getenv("DEPLOY_ENV", "local")
+match deploy_env:
+    case "prod":
+        BASE_URL = "/codinghubs/"
+    case _:
+        BASE_URL = "/"
+
 NAVBAR_TEMPLATE = """
 <div class="navbar">
     <div class="logo">
@@ -29,8 +37,8 @@ NAVBAR_TEMPLATE = """
         <div class="dropdown">
             <a href="#" class="dropbtn">Análisis <span class="arrow-down">▼</span></a>
             <div class="dropdown-content">
-                <a href="/pares" target="_self">Pares Expertos</a>
-                <a href="/encuentros_colaborativos" target="_self">Encuentros Colaborativos</a>
+                <a href="{BASE_URL}pares" target="_self">Pares Expertos</a>
+                <a href="{BASE_URL}encuentros_colaborativos" target="_self">Encuentros Colaborativos</a>
             </div>
         </div>
     </div>
