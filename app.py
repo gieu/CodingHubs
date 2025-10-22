@@ -1,5 +1,14 @@
 
 import streamlit as st
+
+# Configuración de la página - debe ser lo primero
+st.set_page_config(
+    page_title="Colombia Programa - Análisis de Datos",
+    page_icon="🏠",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
 def main(): 
     pages = {
         "": [

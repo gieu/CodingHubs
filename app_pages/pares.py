@@ -73,9 +73,6 @@ PLOTLY_COLOR_SCALES = {
     'viridis_custom': ['#440154', '#482777', '#3F4A8A', '#31678E', '#26838F', '#1F9D8A', '#6CCE5A', '#B6DE2B', '#FEE825']
 }
 
-# Configuración de la página
-st.set_page_config(layout="wide")
-
 # Ocultar elementos de Streamlit
 st.markdown(HIDE_STREAMLIT_STYLE, unsafe_allow_html=True)
 
