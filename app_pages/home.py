@@ -5,10 +5,6 @@ from constants.header_constants import  LOGO_NAVBAR_BASE64,HIDE_STREAMLIT_STYLE,
 from actions.home_actions import mostrar_imagen, centrar_texto, obtener_datos_nodos, obtener_datos_mapa
 from widgets.mapa_widget import dibujar_mapa
 from constants.header_constants import header
-# Configuración de la página
-st.set_page_config(
-    layout="wide",
-)
 # Ocultar elementos de Streamlit
 st.markdown(HIDE_STREAMLIT_STYLE, unsafe_allow_html=True)
 

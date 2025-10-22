@@ -218,8 +218,6 @@ def generar_css_personalizado(color_fondo_navbar=DEFAULT_COLOR_FONDO_NAVBAR):
 
 def header(color_fondo_navbar=DEFAULT_COLOR_FONDO_NAVBAR):
     """Genera el header personalizado con el color de fondo especificado."""
-    st.set_page_config(layout="wide")
-
     # Ocultar elementos de Streamlit
     st.markdown(HIDE_STREAMLIT_STYLE, unsafe_allow_html=True)
 

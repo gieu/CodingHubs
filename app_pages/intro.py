@@ -7,11 +7,6 @@ from constants.footer_constants import FOOTER_HTML, IMAGENES_BASE64
 from constants.header_constants import LOGO_NAVBAR_BASE64, HIDE_STREAMLIT_STYLE, NAVBAR_TEMPLATE, generar_css_personalizado
 from actions.intro_actions import mostrar_imagen, mostrar_componente, centrar_texto
 
-# Configuración de la página
-st.set_page_config(
-    layout="wide",
-)
-
 # Ocultar elementos de Streamlit
 st.markdown(HIDE_STREAMLIT_STYLE, unsafe_allow_html=True)
 
