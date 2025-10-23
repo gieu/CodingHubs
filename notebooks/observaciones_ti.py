@@ -166,22 +166,54 @@ def _(copia):
 
 
 @app.cell
-def _(df_6, pd):
+def _(df_6, pd, re):
     lista_instantaneas = ['Instantánea 1 - minuto 8 de la observación ¿Qué está haciendo el/la docente ahora? Indique cuál de las siguientes acciones es la principal que está realizando la/el docente en este instante.', '¿Qué está haciendo el/la docente ahora? Indique cuál de las siguientes acciones es la principal que está realizando la/el docente en este instante.', '¿Qué está haciendo el/la docente ahora? Indique cuál de las siguientes acciones es la principal que está realizando la/el docente en este instante..1', '¿Qué está haciendo el/la docente ahora? Indique cuál de las siguientes acciones es la principal que está realizando la/el docente en este instante..2', '¿Qué está haciendo el/la docente ahora? Indique cuál de las siguientes acciones es la principal que está realizando la/el docente en este instante..3', '¿Qué está haciendo el/la docente ahora? Indique cuál de las siguientes acciones es la principal que está realizando la/el docente en este instante..4', '¿Qué está haciendo el/la docente ahora? Indique cuál de las siguientes acciones es la principal que está realizando la/el docente en este instante..5', '¿Qué está haciendo el/la docente ahora? Indique cuál de las siguientes acciones es la principal que está realizando la/el docente en este instante..6', '¿Qué está haciendo el/la docente ahora? Indique cuál de las siguientes acciones es la principal que está realizando la/el docente en este instante..7', '¿Qué está haciendo el/la docente ahora? Indique cuál de las siguientes acciones es la principal que está realizando la/el docente en este instante..8', '¿Qué está haciendo el/la docente ahora? Indique cuál de las siguientes acciones es la principal que está realizando la/el docente en este instante..9', '¿Qué está haciendo el/la docente ahora? Indique cuál de las siguientes acciones es la principal que está realizando la/el docente en este instante..10']
-    columnas = ['¿Qué está haciendo el/la docente ahora?', 'Indique con quiénes está interactuando el/la docente', '¿Con quiénes está interactuando el/la docente?', '¿Están los/las estudiantes respondiendo las preguntas y/o participando en las discusiones?', '¿Están los/las estudiantes escuchando atentamente al docente?', '¿Están los/las estudiantes tomando nota de las explicaciones o discusiones?', '¿Están los/las estudiantes haciendo preguntas y/o pidiendo ayuda al docente?', '¿Están los/las estudiantes socializando su trabajo?', '¿Quiénes están socializando su trabajo?', '¿Están los/las estudiantes distraídos, haciendo indisciplina o mostrando de alguna otra manera que no están involucrados en las actividades que lidera el/la docente?', '¿Quiénes no están involucrados en las actividades que lidera el/la docente?', '¿Están haciendo uso de herramientas computacionales?', '¿Quiénes están haciendo uso de herramientas computacionales?', '¿Están los/las estudiantes trabajando individualmente?', '¿Están los/las estudiantes trabajando en parejas o grupos?', '¿Quiénes están ejerciendo roles de liderazgo en el trabajo en parejas o grupos?', '¿Están los/las estudiantes realizando las actividades por sí mismos, sin ayuda del docente?', 'Agregue cualquier comentario adicional, que sea relevante para entender lo que está sucediendo en el aula en este instante de la clase', 'ID de respuesta', 'Número de documento de docente observado/a', 'Nombre de docente observado/a', 'Indique sexo del docente', '¿El/la docente trabaja con una guía pedagógica?', 'Información de la clase Asignatura - Selected Choice', 'Código IE', 'Momento', 'Número de instantánea']
+    columnas = ['¿Qué está haciendo el/la docente ahora?', 'Indique con quiénes está interactuando el/la docente', '¿Con quiénes está interactuando el/la docente?', '¿Están los/las estudiantes respondiendo las preguntas y/o participando en las discusiones?', '¿Están los/las estudiantes escuchando atentamente al docente?', '¿Están los/las estudiantes tomando nota de las explicaciones o discusiones?', '¿Están los/las estudiantes haciendo preguntas y/o pidiendo ayuda al docente?', '¿Están los/las estudiantes socializando su trabajo?', '¿Quiénes están socializando su trabajo?', '¿Están los/las estudiantes distraídos, haciendo indisciplina o mostrando de alguna otra manera que no están involucrados en las actividades que lidera el/la docente?', '¿Quiénes no están involucrados en las actividades que lidera el/la docente?', '¿Están haciendo uso de herramientas computacionales?', '¿Quiénes están haciendo uso de herramientas computacionales?', '¿Están los/las estudiantes trabajando individualmente?', '¿Están los/las estudiantes trabajando en parejas o grupos?', '¿Quiénes están ejerciendo roles de liderazgo en el trabajo en parejas o grupos?', '¿Están los/las estudiantes realizando las actividades por sí mismos, sin ayuda del docente?', 'Agregue cualquier comentario adicional, que sea relevante para entender lo que está sucediendo en el aula en este instante de la clase', 'ID de respuesta', 'Número de documento de docente observado/a', 'Nombre de docente observado/a', 'Indique sexo del docente', '¿El/la docente trabaja con una guía pedagógica?', 'Información de la clase Asignatura - Selected Choice', 'Colegio', 'Momento', 'Número de instantánea']
     instantaneas = pd.DataFrame()
     _i = 1
     for instantanea in lista_instantaneas:
         print(instantanea)
         columna = df_6.columns.get_loc(instantanea)
-        tablita = df_6.iloc[:, columna:columna + 18].copy()
+        tablita = df_6.iloc[:, columna:columna + 22].copy()
         tablita = tablita.rename(columns={instantanea: '¿Qué está haciendo el/la docente ahora?'})
         tablita = tablita.merge(df_6.loc[:, ['ID de respuesta', 'Número de documento de docente observado/a', 'Nombre de docente observado/a', 'Indique sexo del docente', '¿El/la docente trabaja con una guía pedagógica?', 'Información de la clase Asignatura - Selected Choice', 'Colegio', 'Momento']], left_index=True, right_index=True)
         tablita.loc[:, 'Número de instantánea'] = _i
-        tablita.columns = columnas
+    
+        tablita.columns = [re.sub("\.+[0-9]+", "", col) for col in tablita.columns]
         instantaneas = pd.concat([instantaneas, tablita], axis=0)
         _i = _i + 1
     return (instantaneas,)
+
+
+@app.cell
+def _(df_6):
+    columnita = df_6.columns.get_loc('¿Están los/las estudiantes trabajando individualmente')
+    df_6.iloc[:, columnita - 1:columnita + 3].columns.tolist()
+    return
+
+
+@app.cell
+def _(instantaneas):
+    instantaneas.loc[:, '¿Están los/las estudiantes trabajando individualmente?'] = instantaneas.apply(lambda x: x['¿Están los/las estudiantes trabajando individualmente?'] if x['¿Están los/las estudiantes trabajando individualmente?'] else x['¿Están los/las estudiantes trabajando individualmente'], axis=1).values
+    return
+
+
+@app.cell
+def _(instantaneas):
+    instantaneas.loc[instantaneas['Número de instantánea'] == 7, '¿Están los/las estudiantes trabajando individualmente?'] = instantaneas.loc[instantaneas['Número de instantánea'] == 7, '¿Están los/las estudiantes trabajando individualmente']
+    return
+
+
+@app.cell
+def _(instantaneas):
+    instantaneas.loc[instantaneas['Número de instantánea'] == 7][['¿Están los/las estudiantes trabajando individualmente?', '¿Están los/las estudiantes trabajando individualmente']]
+    return
+
+
+@app.cell
+def _(instantaneas):
+    instantaneas.drop(columns=['¿Están los/las estudiantes trabajando individualmente'], inplace=True)
+    return
 
 
 @app.cell
@@ -203,6 +235,7 @@ def _():
         'Fecha de inicio': 'fecha_inicio',
         'Fecha de finalización': 'fecha_fin',
         'Momento': 'momento',
+        'Colegio': 'colegio',
         'Tipo de respuesta': 'tipo_respuesta',
         'Dirección IP': 'ip',
         'Progreso': 'progreso',
@@ -311,7 +344,6 @@ def _():
         '¿Se gestionan correctamente los materiales e instrumentos para el desarrollo de las actividades propuestas?': 'gestion_material',
         '¿Se valora el esfuerzo de los estudiantes para desarrollar las actividades propuestas?': 'valoracion_esfuerzo',
         '¿Se observa acompañamiento con estrategias de apoyo (aclaración de dudas, explicaciones, ejemplos adicionales, invitación a revisar notas de clases previas, etc) a los estudiantes durante el desarrollo de las actividades?': 'apoyo_estudiantes',
-        'Prácticas en pro de la equidad de género Elija todas las opciones que representen lo que haya sucedido durante la clase acompañada. - Selected Choice - Se corrigen comentarios y comportamientos sexistass': 'equidad_corrige_sexismo',
         'Prácticas en pro de la equidad de género Elija todas las opciones que representen lo que haya sucedido durante la clase acompañada. - Selected Choice - Se estimula el liderazgo femenino': 'equidad_liderazgo_fem',
         'Prácticas en pro de la equidad de género Elija todas las opciones que representen lo que haya sucedido durante la clase acompañada. - Selected Choice - Se realizan acciones afirmativas en términos de género': 'equidad_acciones_afirm',
         'Prácticas en pro de la equidad de género Elija todas las opciones que representen lo que haya sucedido durante la clase acompañada. - Selected Choice - Se dedica tiempo de la clase a hacer reflexiones sobre equidad de género, por ejemplo, destacando los aportes de personajes masculinos y femeninos': 'equidad_reflexion',
@@ -331,8 +363,6 @@ def _():
         '¿Quiénes están socializando su trabajo?': 'socializacion_quien',
         '¿Están los/las estudiantes distraídos, haciendo indisciplina o mostrando de alguna otra manera que no están involucrados en las actividades que lidera el/la docente?': 'distraccion',
         '¿Quiénes no están involucrados en las actividades que lidera el/la docente?': 'no_involucrados',
-        '¿Están haciendo uso de herramientas computacionales?': 'uso_tech',
-        '¿Quiénes están haciendo uso de herramientas computacionales?': 'uso_tech_quien',
         '¿Están los/las estudiantes trabajando individualmente?': 'trabajo_ind',
         '¿Están los/las estudiantes trabajando en parejas o grupos?': 'trabajo_grupo',
         '¿Quiénes están ejerciendo roles de liderazgo en el trabajo en parejas o grupos?': 'liderazgo',
@@ -412,15 +442,15 @@ def _():
 
 
 @app.cell
-def _():
-    # for kesy in rename_dict.keys():
-    #     if kesy not in df_6.columns:
-    #         print(kesy)
-    # print("*"*10)
+def _(df_6, rename_dict):
+    for kesy in rename_dict.keys():
+        if kesy not in df_6.columns:
+            print(kesy)
+    print("*"*10)
 
-    # for col in df_6.columns:
-    #     if col not in rename_dict:
-    #         print(col)
+    for col in df_6.columns:
+        if col not in rename_dict:
+            print(col)
     return
 
 
@@ -474,7 +504,7 @@ def _(obs_generales_1):
 
 @app.cell
 def _(instantaneas_2):
-    instantaneas_2['¿Qué está haciendo el/la docente ahora?'].unique()
+    instantaneas_2
     return
 
 
@@ -487,7 +517,7 @@ def _(instantaneas_2, obs_generales_1):
 
 @app.cell
 def _():
-    nuevo_orden_1 = ['fecha_inicio', 'fecha_fin', 'visita', 'momento', 'fecha_acomp', 'fecha_registro', 'hora_inicio', 'duracion_clase', 'duracion_seg', 'doc_docente', 'nombre_docente', 'sexo_docente', 'unidad', 'Código', 'tipo_respuesta', 'id_respuesta', 'ip', 'progreso', 'finalizado', 'latitud', 'longitud', 'canal_dist', 'idioma', 'asignatura', 'otra_asignatura', 'grado', 'guia_pedagogica', 'grado_guia', 'num_guia', 'sesion_guia', 'tema_clase', 'total_estudiantes', 'est_femenino', 'est_masculino', 'tech_portatiles', 'tech_escritorio', 'tech_tabletas', 'tech_celulares', 'tech_microprocesadores', 'tech_componentes_externos', 'tech_robots', 'tech_sin_uso', 'tech_otra', 'tech_otra_detalle', 'click_inicio', 'click_fin', 'envio_pagina', 'num_clics', 'min_inicio_gestion', 'objetivos_aprend', 'conoc_previos', 'conceptos_clave', 'act_desconectada_presente', 'act_desconectada_desc', 'act_desconectada_participantes', 'razon_dificultad_instrucciones', 'razon_dificultad_concepto', 'razon_dificultad_narrativa', 'razon_dificultad_otra', 'razon_dificultad_otra_detalle', 'act_desconectada_compartir', 'act_desconectada_cierre', 'act_desconectada_eficacia', 'act_desconectada_comentarios', 'act_conectada_presente', 'act_conectada_dispositivos', 'act_conectada_microprocesadores', 'act_conectada_distribucion', 'act_conectada_software', 'act_conectada_herramientas', 'act_conectada_conectividad', 'act_conectada_predecir', 'act_conectada_ejecutar_replicar', 'act_conectada_ejecutar_entregar', 'act_conectada_investigar_libre', 'act_conectada_investigar_guiada', 'act_conectada_investigar_compartir', 'act_conectada_explicacion', 'act_conectada_modificar_ind', 'act_conectada_modificar_docente', 'act_conectada_modificar_apoyo', 'act_conectada_hacer_ind', 'act_conectada_hacer_apoyo', 'act_conectada_hacer_replicar', 'act_conectada_proyecto_fisico', 'act_conectada_comentarios', 'estrategia_pares', 'estrategia_parsons', 'estrategia_vivo', 'estrategia_lectura', 'estrategia_evaluacion', 'estrategia_proyectos', 'estrategia_diseno', 'estrategia_tinkering', 'estrategia_ninguna', 'estrategia_otra', 'estrategia_otra_detalle', 'estudiantes_solucion', 'estudiantes_instrucciones', 'razon_inicio_atencion', 'razon_inicio_claras', 'razon_inicio_modelo_doc', 'razon_inicio_modelo_est', 'razon_inicio_otra', 'razon_inicio_otra_detalle', 'razon_no_inicio_confusas', 'razon_no_inicio_sin_instrucciones', 'razon_no_inicio_sin_modelo', 'razon_no_inicio_otra', 'razon_no_inicio_otra_detalle', 'promocion_comp', 'vocabulario_comp', 'conexion_vida', 'resolucion_tecnica', 'dificultades_tecnicas', 'prep_material', 'gestion_material', 'valoracion_esfuerzo', 'apoyo_estudiantes', 'equidad_corrige_sexismo', 'equidad_liderazgo_fem', 'equidad_acciones_afirm', 'equidad_reflexion', 'equidad_ninguna', 'equidad_otra', 'equidad_otra_detalle', 'info_adicional_equidad', 'metacognicion', 'uso_grafico_anclaje']  # Metadatos generales y fechas  # Identificación y datos del docente  # Respuesta y progreso  # Ubicación y distribución  # Detalles de la clase  # Tecnologías digitales  # Interacciones y timing  # Actividades desconectadas  # Actividades conectadas  # Estrategias pedagógicas  # Evaluación de estudiantes  # Promoción y competencias  # Gestión y equidad
+    nuevo_orden_1 = ['fecha_inicio', 'fecha_fin', 'visita', 'momento', 'fecha_acomp', 'fecha_registro', 'hora_inicio', 'duracion_clase', 'duracion_seg', 'doc_docente', 'nombre_docente', 'sexo_docente', 'unidad', 'colegio', 'tipo_respuesta', 'id_respuesta', 'ip', 'progreso', 'finalizado', 'latitud', 'longitud', 'canal_dist', 'idioma', 'asignatura', 'otra_asignatura', 'grado', 'guia_pedagogica', 'grado_guia', 'num_guia', 'sesion_guia', 'tema_clase', 'total_estudiantes', 'est_femenino', 'est_masculino', 'tech_portatiles', 'tech_escritorio', 'tech_tabletas', 'tech_celulares', 'tech_microprocesadores', 'tech_componentes_externos', 'tech_robots', 'tech_sin_uso', 'tech_otra', 'tech_otra_detalle', 'click_inicio', 'click_fin', 'envio_pagina', 'num_clics', 'min_inicio_gestion', 'objetivos_aprend', 'conoc_previos', 'conceptos_clave', 'act_desconectada_presente', 'act_desconectada_desc', 'act_desconectada_participantes', 'razon_dificultad_instrucciones', 'razon_dificultad_concepto', 'razon_dificultad_narrativa', 'razon_dificultad_otra', 'razon_dificultad_otra_detalle', 'act_desconectada_compartir', 'act_desconectada_cierre', 'act_desconectada_eficacia', 'act_desconectada_comentarios', 'act_conectada_presente', 'act_conectada_dispositivos', 'act_conectada_microprocesadores', 'act_conectada_distribucion', 'act_conectada_software', 'act_conectada_herramientas', 'act_conectada_conectividad', 'act_conectada_predecir', 'act_conectada_ejecutar_replicar', 'act_conectada_ejecutar_entregar', 'act_conectada_investigar_libre', 'act_conectada_investigar_guiada', 'act_conectada_investigar_compartir', 'act_conectada_explicacion', 'act_conectada_modificar_ind', 'act_conectada_modificar_docente', 'act_conectada_modificar_apoyo', 'act_conectada_hacer_ind', 'act_conectada_hacer_apoyo', 'act_conectada_hacer_replicar', 'act_conectada_proyecto_fisico', 'act_conectada_comentarios', 'estrategia_pares', 'estrategia_parsons', 'estrategia_vivo', 'estrategia_lectura', 'estrategia_evaluacion', 'estrategia_proyectos', 'estrategia_diseno', 'estrategia_tinkering', 'estrategia_ninguna', 'estrategia_otra', 'estrategia_otra_detalle', 'estudiantes_solucion', 'estudiantes_instrucciones', 'razon_inicio_atencion', 'razon_inicio_claras', 'razon_inicio_modelo_doc', 'razon_inicio_modelo_est', 'razon_inicio_otra', 'razon_inicio_otra_detalle', 'razon_no_inicio_confusas', 'razon_no_inicio_sin_instrucciones', 'razon_no_inicio_sin_modelo', 'razon_no_inicio_otra', 'razon_no_inicio_otra_detalle', 'promocion_comp', 'vocabulario_comp', 'conexion_vida', 'resolucion_tecnica', 'dificultades_tecnicas', 'prep_material', 'gestion_material', 'valoracion_esfuerzo', 'apoyo_estudiantes', 'equidad_corrige_sexismo', 'equidad_liderazgo_fem', 'equidad_acciones_afirm', 'equidad_reflexion', 'equidad_ninguna', 'equidad_otra', 'equidad_otra_detalle', 'info_adicional_equidad', 'metacognicion', 'uso_grafico_anclaje']  # Metadatos generales y fechas  # Identificación y datos del docente  # Respuesta y progreso  # Ubicación y distribución  # Detalles de la clase  # Tecnologías digitales  # Interacciones y timing  # Actividades desconectadas  # Actividades conectadas  # Estrategias pedagógicas  # Evaluación de estudiantes  # Promoción y competencias  # Gestión y equidad
     return (nuevo_orden_1,)
 
 
@@ -546,8 +576,8 @@ def _():
 
 
 @app.cell
-def _(instantaneas_3):
-    instantaneas_3
+def _(obs_generales_3):
+    obs_generales_3
     return
 
 
