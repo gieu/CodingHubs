@@ -8,6 +8,8 @@ from constants.footer_constants import FOOTER_HTML, IMAGENES_BASE64
 from constants.header_constants import LOGO_NAVBAR_BASE64, HIDE_STREAMLIT_STYLE, NAVBAR_TEMPLATE, generar_css_personalizado
 from utils.chart_config import get_chart_config
 from constants.header_constants import header
+import actions.utils as utils
+import os
 # ==========================================
 # CONFIGURACIÓN INICIAL
 # ==========================================
@@ -18,11 +20,11 @@ chart_config = get_chart_config()
 # ==========================================
 # Colores principales del proyecto Colombia Programa
 COLOR_PALETTE = {
-    # Colores primarios
-    'primary': '#1DB2E8',      # Azul principal
-    'secondary': '#00A651',    # Verde Colombia
-    'accent': '#FFB400',       # Amarillo Colombia
-    'dark': '#2C3E50',         # Azul oscuro
+    # Colores primarios - Paleta oficial para variables
+    'primary': '#46BAD2',      # Azul oficial
+    'secondary': '#00A651',    # Verde Colombia (mantener)
+    'accent': '#ff7f00',       # Naranja oficial
+    'dark': '#271D67',         # Morado oficial
     
     # Colores para gráficas
     'bar_single': '#1DB2E8',   # Azul para barras individuales
@@ -30,17 +32,19 @@ COLOR_PALETTE = {
     'bar_negative': '#E74C3C', # Rojo para valores negativos
     'pie_colors': ['#1DB2E8', '#00A651', '#FFB400', '#E74C3C', '#9B59B6', '#F39C12'],
     
-    # Escalas de colores continuas
-    'blue_scale': ['#E3F2FD', '#BBDEFB', '#90CAF9', '#64B5F6', '#42A5F5', '#2196F3', '#1E88E5', '#1976D2', '#1565C0', '#0D47A1'],
+    # Escalas de colores continuas - Basadas en paleta oficial
+    'blue_scale': ['#E8F6FA', '#D1EEEF', '#B9E5F4', '#A2DCF0', '#8BD3EC', '#74CAE8', '#5DC1E4', '#46BAD2', '#3FA8BD', '#3896A8'],
     'green_scale': ['#E8F5E8', '#C8E6C8', '#A5D6A7', '#81C784', '#66BB6A', '#4CAF50', '#43A047', '#388E3C', '#2E7D32', '#1B5E20'],
-    # Colores categóricos
+    'orange_scale': ['#FFF4E6', '#FFE8CC', '#FFDBB3', '#FFCF99', '#FFC280', '#FFB566', '#FFA84D', '#ff7f00', '#E67300', '#CC6600'],
+    'purple_scale': ['#EFEEFC', '#DFDDF9', '#CFCCF6', '#BFBBF3', '#AFAAF0', '#9F99ED', '#8F88EA', '#7F77E7', '#6F66E4', '#271D67'],
+    # Colores categóricos - Paleta oficial
     'categorical': [
-        '#1DB2E8',  # Azul
-        '#00A651',  # Verde
-        '#FFB400',  # Amarillo
-        '#E74C3C',  # Rojo
-        '#9B59B6',  # Morado
-        '#F39C12',  # Naranja
+        '#46BAD2',  # Azul oficial
+        '#00A651',  # Verde Colombia
+        '#ff7f00',  # Naranja oficial
+        '#271D67',  # Morado oficial
+        '#E74C3C',  # Rojo (complementario)
+        '#F39C12',  # Amarillo (complementario)
         '#34495E',  # Gris azulado
         '#16A085',  # Verde azulado
         '#E67E22',  # Naranja oscuro
@@ -65,26 +69,56 @@ COLOR_PALETTE = {
     }
 }
 
-# Escalas de colores para Plotly
+# Escalas de colores para Plotly - Paleta oficial
 PLOTLY_COLOR_SCALES = {
-    'primary': [[0, '#E3F2FD'], [1, '#1DB2E8']],
+    'primary': [[0, '#E8F6FA'], [1, '#46BAD2']],
     'success': [[0, '#E8F5E8'], [1, '#00A651']],
-    'warning': [[0, '#FFF8E1'], [1, '#FFB400']],
-    'viridis_custom': ['#440154', '#482777', '#3F4A8A', '#31678E', '#26838F', '#1F9D8A', '#6CCE5A', '#B6DE2B', '#FEE825']
+    'accent': [[0, '#FFF4E6'], [1, '#ff7f00']],
+    'dark': [[0, '#EFEEFC'], [1, '#271D67']],
+    'official_palette': ['#46BAD2', '#00A651', '#ff7f00', '#271D67']
 }
 
-# Ocultar elementos de Streamlit
-st.markdown(HIDE_STREAMLIT_STYLE, unsafe_allow_html=True)
+# ==========================================
+# FUNCIÓN HEADER PERSONALIZADA PARA ESTA PÁGINA
+# ==========================================
 
-# Generar el CSS personalizado con el color deseado
-color_fondo_navbar = "#00A651"  # Verde para distinguir esta página
-custom_css = generar_css_personalizado(color_fondo_navbar)
+def header_encuentros_colaborativos(color_fondo_navbar="#ff7f00"):
+    """Genera el header personalizado con el logo de Coding Hubs específicamente para encuentros colaborativos."""
+    import streamlit as st
+    
+    # Ruta del logo específico para esta página
+    RUTA_LOGO_CODINGHUBS = "./assets/codinghubs.png"
+    LOGO_CODINGHUBS_BASE64 = utils.imagen_a_base64(RUTA_LOGO_CODINGHUBS)
+    
+    # Deploy environment
+    deploy_env = os.getenv("DEPLOY_ENV", "local")
+    BASE_URL = "/"
+    if deploy_env == 'prod':
+        BASE_URL = "/codinghubs/"
+    else:
+        BASE_URL = "/"
+    
+    # Ocultar elementos de Streamlit
+    st.markdown(HIDE_STREAMLIT_STYLE, unsafe_allow_html=True)
 
-# Aplicar el CSS en Streamlit
-st.markdown(custom_css, unsafe_allow_html=True)
+    # Generar el CSS personalizado con el color deseado
+    custom_css = generar_css_personalizado(color_fondo_navbar)
 
-# Crear navbar
-header()
+    # Aplicar el CSS en Streamlit
+    st.markdown(custom_css, unsafe_allow_html=True)
+
+    # Navbar personalizado con logo específico de Coding Hubs
+    navbar_codinghubs = NAVBAR_TEMPLATE.format(
+        LOGO_NAVBAR_BASE64=LOGO_CODINGHUBS_BASE64,
+        BASE_URL=BASE_URL
+    )
+    st.markdown(navbar_codinghubs, unsafe_allow_html=True)
+
+# Definir el color personalizado para esta página
+color_fondo_navbar = "#ff7f00"  # Naranja para distinguir esta página
+
+# Crear navbar con el color personalizado y logo específico
+header_encuentros_colaborativos(color_fondo_navbar)
 # ==========================================
 # CARGA DE DATOS
 # ==========================================
@@ -104,17 +138,351 @@ def load_data(file):
 # FUNCIONES DE DASHBOARDS ENFOCADOS EN COLABORACIÓN
 # ==========================================
 
-def hallazgos_generales():
+def resumen_ejecutivo_momentos():
+    """Resumen ejecutivo conciso de encuentros colaborativos"""
+    
+    # Cargar datos
+    url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzYORLJ_nV7qv_vP2hrWmdV8Sm2rOpQPSNH9WLKJkJoHyfIOgBsrJu-uh-6_MYDg/pub?output=csv"
+    df = load_data(url)
+    
+    if df.empty:
+        st.warning("No hay datos disponibles para generar el resumen ejecutivo.")
+        return
+    
+    # Selector de fase
+    st.header("📋 Resumen Ejecutivo - Encuentros Colaborativos")
+    
+    if 'Fase' in df.columns:
+        fases_disponibles = sorted(df['Fase'].dropna().unique())
+        opciones_fase = ["Todas las fases"] + list(fases_disponibles)
+        
+        fase_seleccionada = st.selectbox(
+            "Selecciona la fase para el resumen:",
+            options=opciones_fase,
+            help="Escoge la fase específica para el análisis ejecutivo"
+        )
+        
+        # Filtrar datos por fase
+        if fase_seleccionada == "Todas las fases":
+            df_filtered = df.copy()
+        else:
+            df_filtered = df[df['Fase'] == fase_seleccionada].copy()
+    else:
+        df_filtered = df.copy()
+        fase_seleccionada = "Datos disponibles"
+    
+    if df_filtered.empty:
+        st.warning("No hay datos válidos para el resumen ejecutivo.")
+        return
+
+    # Filtrar por conductas específicas
+    if 'Conducta' in df_filtered.columns:
+        df_filtered['Conducta'] = df_filtered['Conducta'].astype(str).str.strip()
+        df_analysis = df_filtered.copy()
+        
+        if df_analysis.empty:
+            st.warning("No hay datos de las conductas analizadas para la fase seleccionada.")
+            return
+    else:
+        st.error("La columna 'Conducta' no existe en los datos.")
+        return
+    
+    # RESUMEN GENERAL
+    st.markdown("### **Resumen General:**")
+
+    # Métricas principales - Calcular el total real de encuentros sin filtros de conducta
+    total_encuentros_real = int(df_filtered.groupby('Fase')['Encuentro'].nunique().sum()) if 'Encuentro' in df_filtered.columns else 0
+    total_participantes = df_analysis['participante'].nunique() if 'participante' in df_analysis.columns else 0
+    total_observaciones = len(df_analysis)
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"**- Total de encuentros:** {total_encuentros_real}")
+    with col2:
+        st.markdown(f"**- Tipos de participantes:** {total_participantes}")
+    with col3:
+        st.markdown(f"**- Total de observaciones:** {total_observaciones}")
+    
+    # Distribución por conducta
+    if 'Conducta' in df_analysis.columns:
+        conducta_counts = df_analysis['Conducta'].value_counts()
+        conducta_percentages = round((conducta_counts / len(df_analysis) * 100), 1)
+        
+        st.markdown("**Distribución por conducta:**")
+        for conducta, porcentaje in conducta_percentages.items():
+            st.markdown(f"- {conducta}: {porcentaje}%")
+    
     st.markdown("---")
-    st.header("📊 Mapa de Calor - Conductas-Momentos")
     
-    # Selector de fase al inicio
-    st.subheader("🔍 Selección de Fase")
+    # ANÁLISIS POR PARTICIPANTE
+    if 'participante' in df_analysis.columns:
+        participantes_unicos = df_analysis['participante'].unique()
+        
+        # Definir el orden específico de participantes
+        orden_participantes = ['M-Junior', 'M-S', 'M-Senior', 'M-SPro', 'DA']
+        
+        # Filtrar solo los participantes que existen en los datos y mantener el orden
+        participantes_ordenados = [p for p in orden_participantes if p in participantes_unicos]
+        
+        # Agregar cualquier participante que esté en los datos pero no en la lista (al final)
+        participantes_adicionales = [p for p in participantes_unicos if p not in orden_participantes]
+        participantes_finales = participantes_ordenados + participantes_adicionales
+        
+        # Función para mostrar información de un participante
+        def mostrar_participante(participante, col=None):
+            df_participante = df_analysis[df_analysis['participante'] == participante].copy()
+            # También obtener datos del participante sin filtros de conducta para calcular participación real
+            df_participante_completo = df_filtered[df_filtered['participante'] == participante].copy()
+            
+            if not df_participante.empty:
+                # Si no se proporciona una columna específica, usar streamlit directamente
+                if col is None:
+                    st.markdown(f"### **{participante.upper()}:**")
+                    
+                    # Métricas del participante - usar datos completos para participación real
+                    encuentros_participante = int(df_participante_completo.groupby('Fase')['Encuentro'].nunique().sum()) if 'Encuentro' in df_participante_completo.columns and not df_participante_completo.empty else int(df_participante['Encuentro'].nunique()) if 'Encuentro' in df_participante.columns else 0
+                    observaciones_participante = len(df_participante)
+                    
+                    # Momentos de actividad
+                    if 'Número de momento' in df_participante.columns:
+                        momento_mas_activo = df_participante['Número de momento'].value_counts().idxmax()
+                        obs_momento_activo = df_participante['Número de momento'].value_counts().max()
+                    else:
+                        momento_mas_activo = "N/A"
+                        obs_momento_activo = 0
+                    
+                    # Conducta principal
+                    if 'Conducta' in df_participante.columns:
+                        conducta_principal = df_participante['Conducta'].value_counts().index[0]
+                        porcentaje_conducta_principal = round((df_participante['Conducta'].value_counts().iloc[0] / len(df_participante) * 100), 1)
+                    else:
+                        conducta_principal = "N/A"
+                        porcentaje_conducta_principal = 0
+                    
+                    # Tipos de comportamiento
+                    if 'tipo' in df_participante.columns:
+                        tipo_principal = df_participante['tipo'].value_counts().index[0]
+                        tipos_diversos = df_participante['tipo'].nunique()
+                    else:
+                        tipo_principal = "N/A"
+                        tipos_diversos = 0
+                    
+                    # Mostrar métricas - usar total real de encuentros
+                    st.markdown(f"- **Participación en encuentros:** {encuentros_participante} de {total_encuentros_real} ({(encuentros_participante/total_encuentros_real*100):.1f}%)")
+                    # Obtener información de la fase del momento más activo
+                    if 'Fase' in df_participante.columns:
+                        fase_momento_activo = df_participante[df_participante['Número de momento'] == momento_mas_activo]['Fase'].iloc[0]
+                        st.markdown(f"- **Momento más activo:** Momento {momento_mas_activo} - Fase {fase_momento_activo} ({obs_momento_activo} observaciones)")
+                    else:
+                        st.markdown(f"- **Momento más activo:** Momento {momento_mas_activo} ({obs_momento_activo} observaciones)")
+                    st.markdown(f"- **Conducta principal:** {conducta_principal} ({porcentaje_conducta_principal}%)")
+                    st.markdown(f"- **Comportamiento predominante:** {tipo_principal}")
+                    st.markdown(f"- **Diversidad de comportamientos:** {tipos_diversos} tipos diferentes")
+                    
+                    st.markdown("")
+                else:
+                    # Si se proporciona una columna específica, usar el context manager
+                    with col:
+                        st.markdown(f"### **{participante.upper()}:**")
+                        
+                        # Métricas del participante - usar datos completos para participación real
+                        encuentros_participante = int(df_participante_completo['Encuentro'].nunique()) if 'Encuentro' in df_participante_completo.columns and not df_participante_completo.empty else int(df_participante['Encuentro'].nunique()) if 'Encuentro' in df_participante.columns else 0
+                        observaciones_participante = len(df_participante)
+                        
+                        # Momentos de actividad
+                        if 'Número de momento' in df_participante.columns:
+                            momento_mas_activo = df_participante['Número de momento'].value_counts().idxmax()
+                            obs_momento_activo = df_participante['Número de momento'].value_counts().max()
+                        else:
+                            momento_mas_activo = "N/A"
+                            obs_momento_activo = 0
+                        
+                        # Conducta principal
+                        if 'Conducta' in df_participante.columns:
+                            conducta_principal = df_participante['Conducta'].value_counts().index[0]
+                            porcentaje_conducta_principal = round((df_participante['Conducta'].value_counts().iloc[0] / len(df_participante) * 100), 1)
+                        else:
+                            conducta_principal = "N/A"
+                            porcentaje_conducta_principal = 0
+                        
+                        # Tipos de comportamiento
+                        if 'tipo' in df_participante.columns:
+                            tipo_principal = df_participante['tipo'].value_counts().index[0]
+                            tipos_diversos = df_participante['tipo'].nunique()
+                        else:
+                            tipo_principal = "N/A"
+                            tipos_diversos = 0
+                        
+                        # Mostrar métricas - usar total real de encuentros
+                        st.markdown(f"- **Participación en encuentros:** {encuentros_participante} de {total_encuentros_real} ({(encuentros_participante/total_encuentros_real*100):.1f}%)")
+                        # Obtener información de la fase del momento más activo
+                        if 'Fase' in df_participante.columns:
+                            fase_momento_activo = df_participante[df_participante['Número de momento'] == momento_mas_activo]['Fase'].iloc[0]
+                            st.markdown(f"- **Momento más activo:** Momento {momento_mas_activo} - Fase {fase_momento_activo} ({obs_momento_activo} observaciones)")
+                        else:
+                            st.markdown(f"- **Momento más activo:** Momento {momento_mas_activo} ({obs_momento_activo} observaciones)")
+                        st.markdown(f"- **Conducta principal:** {conducta_principal} ({porcentaje_conducta_principal}%)")
+                        st.markdown(f"- **Comportamiento predominante:** {tipo_principal}")
+                        st.markdown(f"- **Diversidad de comportamientos:** {tipos_diversos} tipos diferentes")
+                        
+                        st.markdown("")
+        
+        # Organizar participantes en el layout especificado
+        if len(participantes_finales) > 0:
+            st.markdown("### **Análisis por Participante:**")
+            
+            # Debug: mostrar qué participantes se detectaron
+            # st.write("DEBUG - Participantes detectados:", participantes_finales)  # Descomenta para debug
+            
+            # Primera fila: M-Junior y M-S
+            primera_fila = [p for p in ['M-Junior', 'M-S'] if p in participantes_finales]
+            if len(primera_fila) > 0:
+                st.markdown("#### **M-JUNIOR y M-S:**")
+                col1, col2 = st.columns(2)
+                for i, participante in enumerate(primera_fila):
+                    if i == 0:
+                        mostrar_participante(participante, col1)
+                    elif i == 1:
+                        mostrar_participante(participante, col2)
+                st.markdown("---")  # Separador entre filas
+            
+            # Segunda fila: M-Senior y M-SPro
+            segunda_fila = [p for p in ['M-Senior', 'M-SPro'] if p in participantes_finales]
+            if len(segunda_fila) > 0:
+                st.markdown("#### **M-SENIOR y M-SPRO:**")
+                col1, col2 = st.columns(2)
+                for i, participante in enumerate(segunda_fila):
+                    if i == 0:
+                        mostrar_participante(participante, col1)
+                    elif i == 1:
+                        mostrar_participante(participante, col2)
+                st.markdown("---")  # Separador entre filas
+            
+            # Tercera fila: DA (solo)
+            if 'DA' in participantes_finales:
+                st.markdown("#### **Docente Acompañado:**")
+                mostrar_participante('DA')
+                st.markdown("---")  # Separador
+            
+            # Participantes adicionales (si los hay) - EXCLUYENDO los ya mostrados
+            participantes_ya_mostrados = ['M-Junior', 'M-S', 'M-Senior', 'M-SPro', 'DA']
+            participantes_restantes = [p for p in participantes_finales if p not in participantes_ya_mostrados]
+            if participantes_restantes:
+                st.markdown("#### **Otros Participantes:**")
+                for participante in participantes_restantes:
+                    mostrar_participante(participante)
+                    st.markdown("---")  # Separador entre participantes adicionales
     
+    # ANÁLISIS DE GÉNERO (si disponible)
+    url_2 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ngk1_bT8zj18I7yzTKeI74316aXaUvKgyx8ww8OzjL0l1_1ewFwcJqW3hBFyuw/pub?output=csv"
+    df_genero = load_data(url_2)
+    
+    if not df_genero.empty and 'sexo' in df_genero.columns:
+        # Filtrar por fase
+        if 'Fase' in df_genero.columns:
+            if fase_seleccionada == "Todas las fases":
+                df_genero = df_genero.copy()
+            else:
+                df_genero = df_genero[df_genero['Fase'] == fase_seleccionada].copy()
+        
+        # Filtrar por conductas
+        if 'Conducta' in df_genero.columns:
+            df_genero['Conducta'] = df_genero['Conducta'].astype(str).str.strip()
+            df_genero_filtered = df_genero.copy()
+            
+            if not df_genero_filtered.empty and 'nombre' in df_genero_filtered.columns:
+                st.markdown("### **Distribución por Género:**")
+                
+                # Limpiar datos de género
+                df_genero_filtered['sexo'] = df_genero_filtered['sexo'].astype(str).str.strip().str.title()
+                
+                # Calcular distribución
+                total_participantes_genero = df_genero_filtered['nombre'].nunique()
+                distribucion_genero = df_genero_filtered.groupby('sexo')['nombre'].nunique()
+                
+                for genero, cantidad in distribucion_genero.items():
+                    porcentaje = round((cantidad / total_participantes_genero * 100), 1)
+                    st.markdown(f"- **{genero}:** {cantidad} participantes ({porcentaje}%)")
+
+def momentos():
+    with st.expander("📚 Información sobre Encuentros Colaborativos"):
+        st.markdown("""
+            ### ¿Qué son los Encuentros Colaborativos?
+            
+            Los encuentros colaborativos son espacios de interacción donde los docentes:
+            
+            - **Comparten experiencias** y conocimientos pedagógicos
+            - **Desarrollan proyectos conjuntos** interdisciplinarios
+            - **Participan en redes** de aprendizaje profesional
+            - **Construyen comunidades** de práctica educativa
+            - **Intercambian recursos** y herramientas didácticas
+            
+            ### Beneficios de la Colaboración Docente:
+            
+            1. **Mejora de la práctica pedagógica** a través del intercambio de experiencias
+            2. **Desarrollo profesional continuo** mediante el aprendizaje entre pares
+            3. **Innovación educativa** a través de proyectos colaborativos
+            4. **Fortalecimiento de la comunidad educativa** institucional e interinstitucional
+            5. **Optimización de recursos** y herramientas educativas
+        """)
+    
+
+    with st.expander("📚 Información sobre la Estructura de los Encuentros por Cohorte"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            ### 🎯 **Cohorte 1**
+            
+            **Momento 1: Bienvenida y rompehielos**
+            
+            El encuentro inició con palabras de bienvenida y una actividad denominada "Cruza si tú...". Además, se realizó una introducción hacia el trabajo colaborativo partiendo del decálogo del trabajo colaborativo y de la definición de la experticia colaborativa.
+            
+            **Momento 2: Playground: desafío micro:bit - Experiencia de los CHM**
+            
+            Los Coding Hubs Masters compartieron los retos de Playground con ejemplos concretos y formas de integrar la micro:bit en contextos escolares.
+            
+            **Momento 3: Playground y micro:bit - Codifiquemos el desafío**
+            
+            Los participantes exploraron el uso de la tarjeta micro:bit y su entorno de programación en MakeCode. La actividad permitió familiarizarse con bloques de programación y las posibilidades de la micro:bit.
+            
+            **Momento 4: Playground: desafío micro:bit en las sedes de expansión**
+            
+            Finalmente, se realizó la planeación conjunta de la implementación de los retos en las sedes de expansión y establecieron un cronograma de sesiones con fechas de ejecución en sus colegios.
+            """)
+        
+        with col2:
+            st.markdown("""
+            ### 🎯 **Cohorte 2**
+            
+            **Momento 1: Bienvenida y rompehielos**
+            
+            Se realizó la dinámica "Un algoritmo para conocernos", diseñada para fortalecer la confianza y el reconocimiento mutuo entre los docentes del Hub y de la sede acompañadas. Así mismo, se presentaron los objetivos, componentes y fundamentos del programa Coding Hubs.
+            
+            **Momento 2: Primer paso en el trabajo colaborativo entre instituciones**
+            
+            Los participantes compartieron información sobre sus áreas, intereses y desafíos y definieron acuerdos sobre cronogramas, canales de comunicación y estrategias conjuntas para el trabajo colaborativo.
+            
+            **Momento 3: Experiencias de implementación de Pensamiento Computacional**
+            
+            Los Coding Hubs Masters presentaron experiencias en el aula que integraron el pensamiento computacional en diversas áreas, seguidas de retroalimentación y adaptaciones por parte de los docentes acompañados.
+            
+            **Momento 4: Crear y puesta en común de ideas**
+            
+            En equipos, construyeron un mapa mental que permitió reflexionar a los docentes acompañados sobre qué entienden por pensamiento computacional y cómo pueden fomentarlo en sus aulas.
+            """)
+        
+        st.info("💡 **Nota**: Cada momento tiene objetivos específicos que contribuyen al desarrollo de competencias colaborativas y pedagógicas en el contexto del programa Coding Hubs.")
+    
+    st.markdown("---")
+
     # Cargar datos temporalmente para obtener las fases disponibles
     url="https://docs.google.com/spreadsheets/d/e/2PACX-1vQzYORLJ_nV7qv_vP2hrWmdV8Sm2rOpQPSNH9WLKJkJoHyfIOgBsrJu-uh-6_MYDg/pub?output=csv"
     df_temp = load_data(url)
-    
+    df = load_data(url)
+
+# Selector de fase al inicio
+    st.header("🔍 Selección de Fase a Analizar")
     if not df_temp.empty and 'Fase' in df_temp.columns:
         fases_disponibles = sorted(df_temp['Fase'].dropna().unique())
         # Agregar opción "Todas las fases"
@@ -126,14 +494,16 @@ def hallazgos_generales():
             help="Escoge la fase específica que deseas analizar en todos los gráficos, o selecciona 'Todas las fases' para incluir ambas"
         )
         
-        st.markdown("---")
         st.info(f"📋 **Análisis para: {fase_seleccionada}**")
     else:
         st.warning("No se encontró la columna 'Fase' en los datos o los datos están vacíos.")
         return
     
+    st.markdown("---")
+    st.subheader("📊 Mapa de Calor - Conductas-Momentos")
+
+
     # Cargar y filtrar datos por fase seleccionada
-    df = load_data(url)
     if not df.empty and 'Fase' in df.columns:
         if fase_seleccionada == "Todas las fases":
             # No filtrar, mantener todas las fases
@@ -181,10 +551,34 @@ def hallazgos_generales():
     # Crear tabla pivote para el mapa de calor
     pivot_data = heatmap_data.pivot(index='tipo', columns='Número de momento', values='Frecuencia').fillna(0)
     
+    # Definir el orden específico deseado
+    orden_especifico = [
+        'Anecdotas',
+        'Aprendizaje PC',
+        'Estrategias',
+        'Materiales',
+        'Vocabulario',
+        'Características estudiantes',
+        'Preguntas estudiantes',
+        'Reflexión género',
+        'Diferencias género',
+        'Estrategias género'
+    ]
+
+    # Filtrar solo los tipos que existen en los datos y mantener el orden especificado
+    orden_relevante = [t for t in orden_especifico if t in pivot_data.index]
+
+    # Agregar cualquier tipo que esté en los datos pero no en la lista especificada (al final)
+    tipos_adicionales = [t for t in pivot_data.index if t not in orden_especifico]
+    orden_final = orden_relevante + tipos_adicionales
+
+    # Reindexar los datos con el orden final
+    if orden_final:
+        pivot_data = pivot_data.reindex(orden_final)
+
     if pivot_data.empty:
         st.warning("No hay suficientes datos para generar el mapa de calor.")
         return
-    
 
     # Generar mapa de calor
     fig_heatmap = px.imshow(
@@ -269,7 +663,7 @@ def hallazgos_generales():
             x='Total_Observaciones',
             y='tipo',
             title="Frecuencia Total por Conducta",
-            labels={'Total_Observaciones': 'Cantidad de Observaciones', 'tipo': 'Conducta'},
+            labels={'Total_Observaciones': 'Cantidad de Conductas', 'tipo': 'Conducta'},
             color='Total_Observaciones',
             color_continuous_scale=COLOR_PALETTE['green_scale'],
             orientation='h',
@@ -279,23 +673,42 @@ def hallazgos_generales():
         fig_bar_tipos.update_layout(showlegend=False, height=400)
         st.plotly_chart(fig_bar_tipos, use_container_width=True, config=chart_config)
     
+  
+    
+    # Obtener conductas disponibles de los datos filtrados
+    conductas_disponibles = sorted(df['Conducta'].unique())
+    
+    # Establecer el índice por defecto para "Transferencia de la experticia"
+    indice_por_defecto = 0
+    if 'Transferencia de la experticia' in conductas_disponibles:
+        indice_por_defecto = conductas_disponibles.index('Transferencia de la experticia')
+    
+    conducta_seleccionada = st.selectbox(
+        "Selecciona la conducta a analizar en detalle:",
+        options=conductas_disponibles,
+        index=indice_por_defecto,
+        help="Escoge la conducta específica que deseas analizar por participante y momento"
+    )
     
     df_puntos = df[ 
-        (df['Conducta'].isin(['Transferencia de la experticia']))
+        (df['Conducta'].isin([conducta_seleccionada]))
     ].copy()
     
-    # Gráfica de líneas: Momento vs Porcentaje de Encuentros por Participante
-    st.subheader(" Análisis de Líneas: Transferencia de la Experticia por Participante y Momento")
+    # Gráfica de líneas: Momento vs Porcentaje de Encuentros 
+    st.subheader(f"📈 Análisis de Líneas: {conducta_seleccionada} por Encuentros y Momento")
     
     if not df_puntos.empty and 'Encuentro' in df_puntos.columns and 'participante' in df_puntos.columns and 'tipo' in df_puntos.columns:
-        # Calcular el porcentaje por momento, participante y tipo
-        max_encuentros = 9
+        # Calcular dinámicamente el número máximo de encuentros y momentos basándose en los datos
+        max_encuentros = df_puntos['Encuentro'].nunique()
+        momento_min = int(df_puntos['Número de momento'].min())
+        momento_max = int(df_puntos['Número de momento'].max())
+        momentos_completos = range(momento_min, momento_max + 1)
+        
         porcentaje_por_participante = []
         
         # Obtener todos los participantes únicos
         participantes_unicos = df_puntos['participante'].unique()
-        tipos_unicos = df_puntos['tipo'].unique()
-        momentos_completos = range(1, 5)  # Asegurar que tenemos todos los momentos del 1 al 9
+        tipos_unicos = df_puntos['tipo'].unique()  
         
         for tipo in tipos_unicos:
             for participante in participantes_unicos:
@@ -333,7 +746,7 @@ def hallazgos_generales():
                 y='Porcentaje_Encuentros',
                 color='Participante',
                 facet_col='Tipo',
-                title="Evolución del Porcentaje de Encuentros con Transferencia de Experticia por Participante y Tipo",
+                title=f"Evolución del Porcentaje de Encuentros con {conducta_seleccionada} por Participante y Tipo",
                 labels={
                     'Momento': 'Momento',
                     'Porcentaje_Encuentros': 'Porcentaje de Encuentros (%)',
@@ -427,7 +840,7 @@ def hallazgos_generales():
         else:
             st.warning("No se pudieron calcular los porcentajes por participante y momento.")
     else:
-        st.warning("No hay datos disponibles para 'Transferencia de la experticia' o faltan las columnas necesarias ('Encuentro', 'participante' o 'tipo').")
+        st.warning(f"No hay datos disponibles para '{conducta_seleccionada}' o faltan las columnas necesarias ('Encuentro', 'participante' o 'tipo').")
    
    
     url_2="https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ngk1_bT8zj18I7yzTKeI74316aXaUvKgyx8ww8OzjL0l1_1ewFwcJqW3hBFyuw/pub?output=csv"
@@ -665,7 +1078,7 @@ def hallazgos_generales():
                 return texto
             
             # Aplicar función a las respuestas
-            conteo_por_pregunta['Respuesta_Corta'] = conteo_por_pregunta['Respuesta'].apply(lambda x: primeras_palabras(x, 3))
+            conteo_por_pregunta['Respuesta_Corta'] = conteo_por_pregunta['Respuesta'].apply(lambda x: primeras_palabras(x, 15))
             
             # Ordenar por número de encuentros de mayor a menor
             conteo_por_pregunta = conteo_por_pregunta.sort_values('Numero_de_encuentros', ascending=True)
@@ -755,7 +1168,7 @@ def hallazgos_generales():
                 return texto
             
             # Aplicar función a las respuestas
-            conteo_por_pregunta['Respuesta_Corta'] = conteo_por_pregunta['Respuesta'].apply(lambda x: primeras_palabras(x, 3))
+            conteo_por_pregunta['Respuesta_Corta'] = conteo_por_pregunta['Respuesta'].apply(lambda x: primeras_palabras(x, 15))
             
             # Ordenar por número de encuentros de mayor a menor
             conteo_por_pregunta = conteo_por_pregunta.sort_values('Numero_de_encuentros', ascending=True)
@@ -843,7 +1256,7 @@ def hallazgos_generales():
                 return texto
             
             # Aplicar función a las respuestas
-            conteo_por_pregunta['Respuesta_Corta'] = conteo_por_pregunta['Respuesta'].apply(lambda x: primeras_palabras(x, 3))
+            conteo_por_pregunta['Respuesta_Corta'] = conteo_por_pregunta['Respuesta'].apply(lambda x: primeras_palabras(x, 15))
             
             # Ordenar por número de encuentros de mayor a menor
             conteo_por_pregunta = conteo_por_pregunta.sort_values('Numero_de_encuentros', ascending=True)
@@ -897,7 +1310,7 @@ def instantaneas():
     st.markdown("---")
     
     # URL del CSV para instantáneas
-    url_instantaneas = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR7fcGuqe4teTMNwAZqMsoDLB8ijDTi8i2R-ihu2_ENZ_k4FnkPcqzzaXrZrEXWVil67RFhWQ9jKwjr/pub?output=csv"
+    url_instantaneas = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTr5c9SzFRrIbWW57I0K7RpSkqtedGpDRJNPMKtVRfDEgMfcrk50PyGtbd9WdUiGcBDuzlZpA7NgZnA/pub?output=csv"
     
     # Cargar datos
     df_inst = load_data(url_instantaneas)
@@ -906,33 +1319,33 @@ def instantaneas():
         st.warning("No hay datos disponibles para las métricas instantáneas.")
         return
     # Selector de instantánea al inicio
-    st.subheader("🔍 Selección de Instantánea")
+    st.subheader("🔍 Selección de Fase")
 
-    # Obtener instantáneas disponibles
-    if 'numInstantanea' in df_inst.columns:
-        instantaneas_disponibles = sorted(df_inst['numInstantanea'].dropna().unique())
-        # Agregar opción "Todas las instantáneas"
-        opciones_instantanea = ["Todas las instantáneas"] + list(instantaneas_disponibles)
+    # Obtener fases disponibles
+    if 'Fase' in df_inst.columns:
+        fases_disponibles = sorted(df_inst['Fase'].dropna().unique())
+        # Agregar opción "Todas las fases"
+        opciones_fase = ["Todas las fases"] + list(fases_disponibles)
         
-        instantanea_seleccionada = st.selectbox(
-            "Selecciona la instantánea a analizar:",
-            options=opciones_instantanea,
-            help="Escoge la instantánea específica que deseas analizar en todos los gráficos, o selecciona 'Todas las instantáneas' para incluir todas"
+        fase_seleccionada = st.selectbox(
+            "Selecciona la fase a analizar:",
+            options=opciones_fase,
+            help="Escoge la fase específica que deseas analizar en todos los gráficos, o selecciona 'Todas las fases' para incluir todas"
         )
         
         st.markdown("---")
-        st.info(f"📋 **Análisis para: {instantanea_seleccionada}**")
+        st.info(f"📋 **Análisis para: {fase_seleccionada}**")
     else:
-        st.warning("No se encontró la columna 'numInstantanea' en los datos o los datos están vacíos.")
+        st.warning("No se encontró la columna 'Fase' en los datos o los datos están vacíos.")
         return
 
-    # Filtrar datos por instantánea seleccionada
-    if instantanea_seleccionada == "Todas las instantáneas":
-        # No filtrar, mantener todas las instantáneas
+    # Filtrar datos por fase seleccionada
+    if fase_seleccionada == "Todas las fases":
+        # No filtrar, mantener todas las fases
         df_inst_filtered = df_inst.copy()
     else:
-        # Filtrar por la instantánea específica seleccionada
-        df_inst_filtered = df_inst[df_inst['numInstantanea'] == instantanea_seleccionada].copy()
+        # Filtrar por la fase específica seleccionada
+        df_inst_filtered = df_inst[df_inst['Fase'] == fase_seleccionada].copy()
 
     if df_inst_filtered.empty:
         st.warning("No hay datos válidos para el análisis de instantáneas.")
@@ -1047,12 +1460,8 @@ def instantaneas():
         ].copy()
         
         if not df_participacion.empty:
-            # Extraer el número del encuentro desde idEncuentro (ej. "E5" de "E5. Chipre - Primaria...")
-            df_participacion['NumeroEncuentro'] = df_participacion['idEncuentro'].str.extract(r'(E\d+)')[0]
-            
             # Filtrar solo registros que tengan un número de encuentro válido
-            df_participacion = df_participacion[df_participacion['NumeroEncuentro'].notna()].copy()
-            
+            df_participacion = df_participacion[df_participacion['encuentro'].notna()].copy()
             if not df_participacion.empty:
                 # Crear conteo agrupado por instantánea y tipo de participantes (sin separar por encuentro)
                 participacion_por_instantanea = df_participacion.groupby(['numInstantanea', 'participantes']).size().reset_index(name='Cantidad_Observaciones')
@@ -1069,7 +1478,7 @@ def instantaneas():
                         'Cantidad_Observaciones': 'No. de Encuentros',
                         'participantes': 'Tipo de Participación por Género'
                     },
-                    color_discrete_sequence=COLOR_PALETTE['categorical'],
+                    color_discrete_sequence=px.colors.qualitative.Vivid,
                     text='Cantidad_Observaciones'
                 )
             
@@ -1081,7 +1490,7 @@ def instantaneas():
                 )
                 
                 fig_participacion_apilada.update_layout(
-                    height=600,
+                    height=650,
                     xaxis_title="Instantáneas",
                     yaxis_title="No. de Encuentros",
                     legend=dict(
@@ -1147,8 +1556,7 @@ def instantaneas():
                     
                     # Mostrar insights
                     for insight in insights_participacion:
-                        st.markdown(insight)
-                
+                        st.markdown(insight)  
             else:
                 st.warning("No hay datos válidos después de extraer el número de encuentro.")
         else:
@@ -1189,7 +1597,7 @@ def instantaneas():
                         'Cantidad_Observaciones': 'No. de Encuentros',
                         'quienDirige': 'Qién Dirige la Participación'
                     },
-                    color_discrete_sequence=COLOR_PALETTE['categorical'],
+                    color_discrete_sequence=px.colors.qualitative.Vivid,
                     text='Cantidad_Observaciones'
                 )
             
@@ -1201,7 +1609,7 @@ def instantaneas():
                 )
 
                 fig_direccion_apilada.update_layout(
-                    height=600,
+                    height=650,
                     xaxis_title="Instantáneas",
                     yaxis_title="No. de Encuentros",
                     legend=dict(
@@ -1425,7 +1833,7 @@ def instantaneas():
 # ==========================================
 # APLICACIÓN PRINCIPAL
 # ==========================================
-st.title("🤝 Análisis Colaborativos e Instantáneas")
+st.title("🤝  Análisis Encuentros Colaborativos e Instantáneas")
 
 st.markdown("""
 Esta página está dedicada al análisis profundo de los **encuentros colaborativos** entre docentes, 
@@ -1433,18 +1841,22 @@ explorando tanto las actitudes como las prácticas de colaboración en el contex
 """)
 
 # Crear las pestañas principales
-tab1, tab2 = st.tabs(["📊 Momentos", "⚡ Instantáneas"])
+tab1, tab2, tab3 = st.tabs([" Resumen Ejecutivo", "📊 Momentos", "⚡ Instantáneas"])
 
 with tab1:
+    # Mostrar resumen ejecutivo
+    resumen_ejecutivo_momentos()
+
+with tab2:
     
     # Mostrar dashboards especializados en colaboración
-    hallazgos_generales()
+    momentos()
     # ==========================================
     # GRAFICADOR PERSONALIZADO EN MOMENTOS
     # ==========================================
     st.markdown("---")
 
-with tab2:
+with tab3:
     st.header("⚡ Instantáneas - Métricas Rápidas")
     st.markdown("""
     Vista rápida de métricas clave y visualizaciones instantáneas sobre redes y 
@@ -1453,37 +1865,7 @@ with tab2:
     instantaneas()
     # Métricas instantáneas adicionales
     st.markdown("---")
-  
-# ==========================================
-# INFORMACIÓN SOBRE COLABORACIÓN
-# ==========================================
-with st.expander("📚 Información sobre Encuentros Colaborativos"):
-    st.markdown("""
-    ### ¿Qué son los Encuentros Colaborativos?
-    
-    Los encuentros colaborativos son espacios de interacción donde los docentes:
-    
-    - **Comparten experiencias** y conocimientos pedagógicos
-    - **Desarrollan proyectos conjuntos** interdisciplinarios
-    - **Participan en redes** de aprendizaje profesional
-    - **Construyen comunidades** de práctica educativa
-    - **Intercambian recursos** y herramientas didácticas
-    
-    ### Beneficios de la Colaboración Docente:
-    
-    1. **Mejora de la práctica pedagógica** a través del intercambio de experiencias
-    2. **Desarrollo profesional continuo** mediante el aprendizaje entre pares
-    3. **Innovación educativa** a través de proyectos colaborativos
-    4. **Fortalecimiento de la comunidad educativa** institucional e interinstitucional
-    5. **Optimización de recursos** y herramientas educativas
-    
-    ### Datos Analizados:
-    
-    - **Actitudes hacia la colaboración** (Q15)
-    - **Frecuencia de prácticas colaborativas** (Q18)
-    - **Participación en redes y comunidades** 
-    - **Correlaciones entre actitudes y prácticas**
-    """)
+
 
 # ==========================================
 # FOOTER Y CRÉDITOS
