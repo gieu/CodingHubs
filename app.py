@@ -25,6 +25,14 @@ def main():
                 url_path="/encuentros_colaborativos"
             )
         ],
+        "Observaciones de Aula": [
+            st.Page(
+                page="app_pages/observaciones.py",
+                title="Graficador de Instantaneas",
+                icon="📊",
+                url_path="/observaciones"
+            )
+        ],
     }
 
     app = st.navigation(pages)
