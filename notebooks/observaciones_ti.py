@@ -14,19 +14,24 @@ def _():
 @app.cell
 def _(pd):
     base = pd.read_csv("../data/limpieza/observaciones_ti.csv", skiprows=[0, 2])
-    return (base,)
+    base2 = pd.read_csv("../data/limpieza/observaciones_ti_post.csv", skiprows=[0, 2])
+    return base, base2
 
 
 @app.cell
-def _(base):
-    df = base.copy()
-    return (df,)
-
-
-@app.cell
-def _(df):
-    df
+def _(base2):
+    base2.rename(columns={
+        "Seleccione la institución educativa y docente a observar - Mentor": "Nombre del mentor(a)",
+        "Seleccione la institución educativa y docente a observar - Institución Educativa": "Nombre de la institución educativa",
+        "Seleccione la institución educativa y docente a observar - Nombre del/la docente observado": "Nombre del/la docente observado(a)"
+    }, inplace=True)
     return
+
+
+@app.cell
+def _(base, base2, pd):
+    df = pd.concat([base, base2], ignore_index=True)
+    return (df,)
 
 
 @app.cell
@@ -73,6 +78,12 @@ def _(df_3):
     df_4 = df_4.sort_values(by=['Número de documento de docente observado/a', 'Fecha'], ascending=[True, True])
     df_4['Momento'] = df_4.groupby('Número de documento de docente observado/a').cumcount().map({0: 'Pre', 1: 'Post'})
     return (df_4,)
+
+
+@app.cell
+def _(df_4):
+    df_4['Momento'].value_counts()
+    return
 
 
 @app.cell
@@ -178,7 +189,7 @@ def _(df_6, pd, re):
         tablita = tablita.rename(columns={instantanea: '¿Qué está haciendo el/la docente ahora?'})
         tablita = tablita.merge(df_6.loc[:, ['ID de respuesta', 'Número de documento de docente observado/a', 'Nombre de docente observado/a', 'Indique sexo del docente', '¿El/la docente trabaja con una guía pedagógica?', 'Información de la clase Asignatura - Selected Choice', 'Colegio', 'Momento']], left_index=True, right_index=True)
         tablita.loc[:, 'Número de instantánea'] = _i
-    
+
         tablita.columns = [re.sub("\.+[0-9]+", "", col) for col in tablita.columns]
         instantaneas = pd.concat([instantaneas, tablita], axis=0)
         _i = _i + 1

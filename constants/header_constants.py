@@ -41,6 +41,7 @@ NAVBAR_TEMPLATE = """
             <div class="dropdown-content">
                 <a href="{BASE_URL}pares" target="_self">Pares Expertos</a>
                 <a href="{BASE_URL}encuentros_colaborativos" target="_self">Encuentros Colaborativos</a>
+                <a href="{BASE_URL}observaciones" target="_self">Observaciones de Aula</a>
             </div>
         </div>
     </div>

@@ -14,12 +14,52 @@ def _():
 @app.cell
 def _(pd):
     base = pd.read_csv("../data/limpieza/observaciones_stem.csv", skiprows=[0, 2])
-    return (base,)
+    base2 = pd.read_csv("../data/limpieza/observaciones_stem_post.csv", skiprows=[0, 2])
+    return base, base2
 
 
 @app.cell
-def _(base):
-    df = base.copy()
+def _(base2):
+    base2
+    return
+
+
+@app.cell
+def _(base2):
+    base3 = base2.rename(columns={
+        "Seleccione la institución educativa y docente a observar - Mentor": "Nombre del mentor(a)",
+        "Seleccione la institución educativa y docente a observar - Institución Educativa": "Nombre de la institución educativa",
+        "Seleccione la institución educativa y docente a observar - Nombre del/la docente observado": "Nombre del/la docente observado(a)",
+        "Asignatura - Selected Choice": "Asignatura",
+        "Número de documento de docente observado": "Número de documento de docente observado/a",
+    
+    })
+
+    base3.columns = [col.replace(" - Selected Choice", "") if "Tecnologías digitales" in col else col for col in base3.columns]
+    return (base3,)
+
+
+@app.cell
+def _(base3):
+    base3
+    return
+
+
+@app.cell
+def _(base, base3):
+    [c for c in base3.columns if c not in base.columns]
+    return
+
+
+@app.cell
+def _(base, base3):
+    [c for c in base.columns if c not in base3.columns]
+    return
+
+
+@app.cell
+def _(base, base3, pd):
+    df = pd.concat([base, base3], ignore_index=True)
     return (df,)
 
 
@@ -31,7 +71,7 @@ def _(df):
 
 @app.cell
 def _(df):
-    df_1 = df.loc[(df['Finalizado'] == True) | (df['Progreso'] > 80), :]
+    df_1 = df.loc[(df['Finalizado'] == True) | (df['Progreso'] >= 80), :]
     return (df_1,)
 
 
@@ -73,6 +113,12 @@ def _(df_3):
     df_4 = df_4.sort_values(by=['Número de documento de docente observado/a', 'Fecha'], ascending=[True, True])
     df_4['Momento'] = df_4.groupby('Número de documento de docente observado/a').cumcount().map({0: 'Pre', 1: 'Post'})
     return (df_4,)
+
+
+@app.cell
+def _(df_4):
+    df_4['Momento'].value_counts()
+    return
 
 
 @app.cell
