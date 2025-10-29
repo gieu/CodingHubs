@@ -178,6 +178,17 @@ def resumen_ejecutivo_momentos():
     # Filtrar por conductas específicas
     if 'Conducta' in df_filtered.columns:
         df_filtered['Conducta'] = df_filtered['Conducta'].astype(str).str.strip()
+        
+        # Reemplazar valores NaN, vacíos o 'nan' con "Comunicación en espacios de aprendizaje"
+        df_filtered['Conducta'] = df_filtered['Conducta'].replace(['nan', '', 'NaN', 'None'], 'Comunicación en espacios de aprendizaje')
+        df_filtered.loc[df_filtered['Conducta'].isna(), 'Conducta'] = 'Comunicación en espacios de aprendizaje'
+        
+        # Limpiar también la columna 'tipo' si existe
+        if 'tipo' in df_filtered.columns:
+            df_filtered['tipo'] = df_filtered['tipo'].astype(str).str.strip()
+            df_filtered['tipo'] = df_filtered['tipo'].replace(['nan', '', 'NaN', 'None'], 'Comunicación en espacios de aprendizaje')
+            df_filtered.loc[df_filtered['tipo'].isna(), 'tipo'] = 'Comunicación en espacios de aprendizaje'
+        
         df_analysis = df_filtered.copy()
         
         if df_analysis.empty:
@@ -194,14 +205,13 @@ def resumen_ejecutivo_momentos():
     total_encuentros_real = int(df_filtered.groupby('Fase')['Encuentro'].nunique().sum()) if 'Encuentro' in df_filtered.columns else 0
     total_participantes = df_analysis['participante'].nunique() if 'participante' in df_analysis.columns else 0
     total_observaciones = len(df_analysis)
-    
-    col1, col2, col3 = st.columns(3)
+
+    col1, col2 = st.columns(2)
     with col1:
         st.markdown(f"**- Total de encuentros:** {total_encuentros_real}")
     with col2:
         st.markdown(f"**- Tipos de participantes:** {total_participantes}")
-    with col3:
-        st.markdown(f"**- Total de observaciones:** {total_observaciones}")
+
     
     # Distribución por conducta
     if 'Conducta' in df_analysis.columns:
@@ -388,6 +398,11 @@ def resumen_ejecutivo_momentos():
         # Filtrar por conductas
         if 'Conducta' in df_genero.columns:
             df_genero['Conducta'] = df_genero['Conducta'].astype(str).str.strip()
+            
+            # Reemplazar valores NaN, vacíos o 'nan' con "Comunicación en espacios de aprendizaje"
+            df_genero['Conducta'] = df_genero['Conducta'].replace(['nan', '', 'NaN', 'None'], 'Comunicación en espacios de aprendizaje')
+            df_genero.loc[df_genero['Conducta'].isna(), 'Conducta'] = 'Comunicación en espacios de aprendizaje'
+            
             df_genero_filtered = df_genero.copy()
             
             if not df_genero_filtered.empty and 'nombre' in df_genero_filtered.columns:
@@ -528,14 +543,42 @@ def momentos():
         st.info("Las columnas disponibles son: " + ", ".join(df.columns.tolist()))
         return
     
-    # Limpiar espacios en blanco en la columna Conducta
+    # Limpiar espacios en blanco en la columna Conducta y reemplazar NaN o vacíos
     df['Conducta'] = df['Conducta'].astype(str).str.strip()
     
-    # Filtrar INCLUYENDO solo las Conductas específicas
+    # Reemplazar valores NaN, vacíos o 'nan' con "Comunicación en espacios de aprendizaje"
+    df['Conducta'] = df['Conducta'].replace(['nan', '', 'NaN', 'None'], 'Comunicación en espacios de aprendizaje')
+    df.loc[df['Conducta'].isna(), 'Conducta'] = 'Comunicación en espacios de aprendizaje'
+    
+    # Selector para tipo de filtro de conductas
+    st.subheader("🎯 Filtro de Conductas")
+    
+    # Definir conductas específicas
     Conductas_permitidas = ['Transferencia de la experticia', 'Instrucción centrada en el estudiante', 'Enfoque de género']
-    df_filtered = df[
-        (df['Conducta'].isin(Conductas_permitidas))
-    ].copy()
+    
+    # Crear selector para tipo de filtro
+    tipo_filtro = st.selectbox(
+        "Selecciona el tipo de conductas a analizar:",
+        options=[
+            "Conductas asociadas al que",
+            "Conductas asociadas al como"
+        ],
+        help="Escoge si quieres analizar solo las conductas específicas o todas las demás"
+    )
+    
+    # Aplicar filtro según la selección
+    if tipo_filtro == "Conductas asociadas al que":
+        df_filtered = df[
+            (df['Conducta'].isin(Conductas_permitidas))
+        ].copy()
+        st.info(f"📊 **Analizando:** {', '.join(Conductas_permitidas)}")
+    else:
+        df_filtered = df[
+            (~df['Conducta'].isin(Conductas_permitidas))
+        ].copy()
+        # Mostrar qué conductas se están analizando
+        conductas_analizadas = sorted(df_filtered['Conducta'].unique())
+        st.info(f"📊 **Analizando todas las demás conductas:** {', '.join(conductas_analizadas)}")
     
     # Filtrar para que solo aparezca un Encuentro único por cada tipo y número de momento
     df_filtered = df_filtered.drop_duplicates(subset=['Encuentro', 'tipo', 'Número de momento','Fase'])
@@ -562,7 +605,24 @@ def momentos():
         'Preguntas estudiantes',
         'Reflexión género',
         'Diferencias género',
-        'Estrategias género'
+        'Estrategias género',
+        'Humor',
+        'Ánimo',
+        'Escucha activa',
+        'Disfrute',
+        'Valoración',
+        'Solicitar opinión',
+        'Recursos didácticos',
+        'Pedir ayuda',
+        'Reconocer aprendizajes',
+        'Reflexión mejoras',
+        'Apoyo validación',
+        'Perspectiva diferente',
+        'Contribución activa',
+        'Preguntas profundización',
+        'Intercambio fluido de turnos',
+        'Decisiones conjuntas',
+        'Rol predominante'
     ]
 
     # Filtrar solo los tipos que existen en los datos y mantener el orden especificado
@@ -641,12 +701,16 @@ def momentos():
             text='Porcentaje'
         )
         fig_bar_momentos.update_traces(texttemplate='%{text}%', textposition='outside')
+        # Obtener valores únicos de momentos para asegurar solo enteros
+        momentos_unicos = sorted(freq_por_momento['Número de momento'].unique())
         fig_bar_momentos.update_layout(
             showlegend=False, 
             height=400,
             xaxis=dict(
-            tickmode='linear',
-            dtick=1  # Mostrar solo números enteros
+                tickmode='array',
+                tickvals=momentos_unicos,
+                ticktext=[str(int(x)) for x in momentos_unicos],
+                title="Número de Momento"
             ),
             yaxis=dict(
             title="Porcentaje (%)",
@@ -676,7 +740,7 @@ def momentos():
   
     
     # Obtener conductas disponibles de los datos filtrados
-    conductas_disponibles = sorted(df['Conducta'].unique())
+    conductas_disponibles = sorted(df_filtered['Conducta'].unique())
     
     # Establecer el índice por defecto para "Transferencia de la experticia"
     indice_por_defecto = 0
@@ -690,8 +754,8 @@ def momentos():
         help="Escoge la conducta específica que deseas analizar por participante y momento"
     )
     
-    df_puntos = df[ 
-        (df['Conducta'].isin([conducta_seleccionada]))
+    df_puntos = df_filtered[ 
+        (df_filtered['Conducta'].isin([conducta_seleccionada]))
     ].copy()
     
     # Gráfica de líneas: Momento vs Porcentaje de Encuentros 
@@ -738,14 +802,27 @@ def momentos():
         
         df_lineas = pd.DataFrame(porcentaje_por_participante)
         
+        # 🔹 Filtrar participantes sin datos reales
+        df_lineas = df_lineas.groupby(['Participante', 'Tipo']).filter(
+            lambda g: g['Porcentaje_Encuentros'].sum() > 0
+        )
+
         if not df_lineas.empty:
-            # Crear gráfico de líneas con facet_col
+            # Determinar el número de tipos únicos para configurar las facetas
+            tipos_unicos = df_lineas['Tipo'].unique()
+            num_tipos = len(tipos_unicos)
+            
+            # Configurar facet_col_wrap para máximo 3 columnas por fila
+            facet_col_wrap = min(3, num_tipos)
+            
+            # Crear gráfico de líneas con facet_col y facet_col_wrap
             fig_lineas = px.line(
                 df_lineas,
                 x='Momento',
                 y='Porcentaje_Encuentros',
                 color='Participante',
                 facet_col='Tipo',
+                facet_col_wrap=facet_col_wrap,
                 title=f"Evolución del Porcentaje de Encuentros con {conducta_seleccionada} por Participante y Tipo",
                 labels={
                     'Momento': 'Momento',
@@ -755,7 +832,8 @@ def momentos():
                 },
                 color_discrete_sequence=COLOR_PALETTE['categorical'],
                 markers=True,
-                hover_data=['Encuentros_Activos', 'Total_Observaciones']
+                hover_data=['Encuentros_Activos', 'Total_Observaciones'],
+                facet_row_spacing=0.25  # Agregar separación vertical entre filas
             )
             
             # Personalizar el gráfico
@@ -763,14 +841,20 @@ def momentos():
                 line=dict(width=3),
                 marker=dict(size=8, line=dict(width=2, color='white'))
             )
+            # Obtener valores únicos de momentos para asegurar solo enteros
+            momentos_unicos = sorted(df_lineas['Momento'].unique())
+            
+            # Calcular altura dinámica basada en el número de filas
+            num_filas = (num_tipos + 2) // 3  # Redondear hacia arriba
+            if num_filas == 1:
+                altura_total = 450
+            elif num_filas == 2:
+                altura_total = 600  # Altura más compacta con facet_row_spacing
+            else:
+                altura_total = 800  # Altura más compacta para 3+ filas
             
             fig_lineas.update_layout(
-                height=400,
-                xaxis=dict(
-                    tickmode='linear',
-                    dtick=1,
-                    title="Momento"
-                ),
+                height=altura_total,
                 yaxis=dict(
                     title="Porcentaje de Encuentros (%)",
                     range=[0, 100]
@@ -781,11 +865,19 @@ def momentos():
                     yanchor="top",
                     y=1,
                     xanchor="left",
-                    x=1.02
+                    x=1
                 ),
                 hovermode='x unified'
             )
             
+            # Aplicar configuración de eje X a todos los subplots (facetas)
+            fig_lineas.update_xaxes(
+                tickmode='array',
+                tickvals=momentos_unicos,
+                ticktext=[str(int(x)) for x in momentos_unicos],
+                title="Momento"
+            )
+            fig_lineas.for_each_xaxis(lambda axis: axis.update(showticklabels=True))
             # Actualizar títulos de facetas para mejor presentación
             fig_lineas.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
             
@@ -835,8 +927,7 @@ def momentos():
                         df_tipo = df_lineas[df_lineas['Tipo'] == tipo]
                         tabla_tipo = df_tipo.pivot(index='Momento', columns='Participante', values='Porcentaje_Encuentros').fillna(0).round(1)
                         st.dataframe(tabla_tipo, use_container_width=True)
-                        if i % 2 == 1 or i == len(tipos_unicos) - 1:  # Añadir espacio después de cada fila
-                            st.write("")
+                    
         else:
             st.warning("No se pudieron calcular los porcentajes por participante y momento.")
     else:
@@ -869,14 +960,25 @@ def momentos():
         st.info("Las columnas disponibles son: " + ", ".join(df_2.columns.tolist()))
         return
     
-    # Limpiar espacios en blanco en la columna Conducta
+    # Limpiar espacios en blanco en la columna Conducta y reemplazar NaN o vacíos
     df_2['Conducta'] = df_2['Conducta'].astype(str).str.strip()
-
-    # Y INCLUYENDO solo las Conductas específicas
+    
+    # Reemplazar valores NaN, vacíos o 'nan' con "Comunicación en espacios de aprendizaje"
+    df_2['Conducta'] = df_2['Conducta'].replace(['nan', '', 'NaN', 'None'], 'Comunicación en espacios de aprendizaje')
+    df_2.loc[df_2['Conducta'].isna(), 'Conducta'] = 'Comunicación en espacios de aprendizaje'
+    
+     # Aplicar el mismo filtro de conductas que se seleccionó anteriormente
     Conductas_permitidas = ['Transferencia de la experticia', 'Instrucción centrada en el estudiante', 'Enfoque de género']
-    df_filtered_genero = df_2[
-        (df_2['Conducta'].isin(Conductas_permitidas))
-    ].copy()
+    
+    # Usar la misma lógica de filtro que se definió anteriormente
+    if tipo_filtro == "Conductas asociadas al que":
+        df_filtered_genero = df_2[
+            (df_2['Conducta'].isin(Conductas_permitidas))
+        ].copy()
+    else:
+        df_filtered_genero = df_2[
+            (~df_2['Conducta'].isin(Conductas_permitidas))
+        ].copy()
     
     # Verificar si existe la columna 'sexo'
     if 'sexo' not in df_filtered_genero.columns:
@@ -1489,6 +1591,9 @@ def instantaneas():
                     textfont=dict(size=12, color='black')
                 )
                 
+                # Obtener valores únicos de instantáneas para asegurar solo enteros
+                instantaneas_unicas = sorted(participacion_por_instantanea['numInstantanea'].unique())
+                
                 fig_participacion_apilada.update_layout(
                     height=650,
                     xaxis_title="Instantáneas",
@@ -1503,8 +1608,9 @@ def instantaneas():
                     ),
                     font=dict(size=12),
                     xaxis=dict(
-                        tickmode='linear',
-                        dtick=1
+                        tickmode='array',
+                        tickvals=instantaneas_unicas,
+                        ticktext=[str(int(x)) for x in instantaneas_unicas]
                     ),
                     barmode='stack'  # Apilar las barras
                 )
@@ -1608,6 +1714,9 @@ def instantaneas():
                     textfont=dict(size=12, color='black')
                 )
 
+                # Obtener valores únicos de instantáneas para asegurar solo enteros
+                instantaneas_unicas = sorted(direccion_por_instantanea['numInstantanea'].unique())
+
                 fig_direccion_apilada.update_layout(
                     height=650,
                     xaxis_title="Instantáneas",
@@ -1622,8 +1731,9 @@ def instantaneas():
                     ),
                     font=dict(size=12),
                     xaxis=dict(
-                        tickmode='linear',
-                        dtick=1
+                        tickmode='array',
+                        tickvals=instantaneas_unicas,
+                        ticktext=[str(int(x)) for x in instantaneas_unicas]
                     ),
                     barmode='stack'  # Apilar las barras
                 )
@@ -1755,8 +1865,9 @@ def instantaneas():
                 ),
                 font=dict(size=12),
                 xaxis=dict(
-                    tickmode='linear',
-                    dtick=1
+                    tickmode='array',
+                    tickvals=sorted(participacion_melted['numInstantanea'].unique()),
+                    ticktext=[str(int(x)) for x in sorted(participacion_melted['numInstantanea'].unique())]
                 )
             )
 
