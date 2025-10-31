@@ -1007,9 +1007,9 @@ def momentos():
             
             # Fusionar datos para calcular porcentajes
             participacion_con_total = participacion_por_tipo_genero.merge(total_por_tipo_participante, on=['Tipo'])
-            participacion_con_total['Porcentaje_Participacion'] = (
+            participacion_con_total['Porcentaje_Participacion'] = round(
                 participacion_con_total['Participantes_Únicos'] / 
-                participacion_con_total['Total_Participantes'] * 100
+                participacion_con_total['Total_Participantes'] * 100, 1
             )
             
             # Crear gráfico de barras agrupadas
@@ -1052,7 +1052,7 @@ def momentos():
             )
             
             st.plotly_chart(fig_barras_genero, use_container_width=True, config=chart_config)
-           
+            
         
         else:
             st.warning("No hay datos válidos para crear la gráfica de participación por género.")
@@ -1074,9 +1074,9 @@ def momentos():
             
             # Fusionar datos para calcular porcentajes
             participacion_con_total = participacion_por_tipo_genero.merge(total_por_tipo_participante, on=['Tipo', 'Participante'])
-            participacion_con_total['Porcentaje_Participacion'] = (
+            participacion_con_total['Porcentaje_Participacion'] = round(
                 participacion_con_total['Participantes_Únicos'] / 
-                participacion_con_total['Total_Participantes'] * 100
+                participacion_con_total['Total_Participantes'] * 100, 1
             )
             
             # Crear gráfico de barras agrupadas
