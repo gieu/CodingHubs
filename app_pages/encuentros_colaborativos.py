@@ -581,7 +581,7 @@ def momentos():
         st.info(f"📊 **Analizando todas las demás conductas:** {', '.join(conductas_analizadas)}")
     
     # Filtrar para que solo aparezca un Encuentro único por cada tipo y número de momento
-    df_filtered = df_filtered.drop_duplicates(subset=['Encuentro', 'tipo', 'Número de momento','Fase'])
+    df_filtered = df_filtered.drop_duplicates(subset=['Encuentro', 'tipo', 'Número de momento','Fase','participante'])
     if df_filtered.empty:
         st.warning("No hay datos válidos después de aplicar los filtros.")
         st.info(f"Valores únicos en 'Conducta' (limpiados): {df['Conducta'].unique().tolist()}")
@@ -847,11 +847,11 @@ def momentos():
             # Calcular altura dinámica basada en el número de filas
             num_filas = (num_tipos + 2) // 3  # Redondear hacia arriba
             if num_filas == 1:
-                altura_total = 450
+                altura_total = 400
             elif num_filas == 2:
-                altura_total = 600  # Altura más compacta con facet_row_spacing
+                altura_total = 800  # Altura más compacta con facet_row_spacing
             else:
-                altura_total = 800  # Altura más compacta para 3+ filas
+                altura_total = 1200  # Altura más compacta para 3+ filas
             
             fig_lineas.update_layout(
                 height=altura_total,
@@ -867,7 +867,12 @@ def momentos():
                     xanchor="left",
                     x=1
                 ),
-                hovermode='x unified'
+                hovermode='x unified',
+                title=dict(
+                    y=0.98,  # Posicionar el título más abajo para crear espacio
+                    yanchor='top'
+                ),
+                margin=dict(t=100)  # Agregar margen superior para más espacio
             )
             
             # Aplicar configuración de eje X a todos los subplots (facetas)
@@ -878,9 +883,11 @@ def momentos():
                 title="Momento"
             )
             fig_lineas.for_each_xaxis(lambda axis: axis.update(showticklabels=True))
-            # Actualizar títulos de facetas para mejor presentación
-            fig_lineas.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
-            
+            # Actualizar títulos de facetas para mejor presentación con más espacio
+            fig_lineas.for_each_annotation(lambda a: a.update(
+                text=a.text.split("=")[-1],
+                y=a.y + 0.03  # Agregar espacio entre el título y el gráfico
+            ))
             st.plotly_chart(fig_lineas, use_container_width=True, config=chart_config)
             
             # Mostrar tabla de datos y estadísticas
@@ -1007,9 +1014,9 @@ def momentos():
             
             # Fusionar datos para calcular porcentajes
             participacion_con_total = participacion_por_tipo_genero.merge(total_por_tipo_participante, on=['Tipo'])
-            participacion_con_total['Porcentaje_Participacion'] = (
+            participacion_con_total['Porcentaje_Participacion'] = round(
                 participacion_con_total['Participantes_Únicos'] / 
-                participacion_con_total['Total_Participantes'] * 100
+                participacion_con_total['Total_Participantes'] * 100, 1
             )
             
             # Crear gráfico de barras agrupadas
@@ -1052,7 +1059,7 @@ def momentos():
             )
             
             st.plotly_chart(fig_barras_genero, use_container_width=True, config=chart_config)
-           
+            
         
         else:
             st.warning("No hay datos válidos para crear la gráfica de participación por género.")
@@ -1074,9 +1081,9 @@ def momentos():
             
             # Fusionar datos para calcular porcentajes
             participacion_con_total = participacion_por_tipo_genero.merge(total_por_tipo_participante, on=['Tipo', 'Participante'])
-            participacion_con_total['Porcentaje_Participacion'] = (
+            participacion_con_total['Porcentaje_Participacion'] = round(
                 participacion_con_total['Participantes_Únicos'] / 
-                participacion_con_total['Total_Participantes'] * 100
+                participacion_con_total['Total_Participantes'] * 100, 1
             )
             
             # Crear gráfico de barras agrupadas
