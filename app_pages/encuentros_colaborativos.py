@@ -142,7 +142,7 @@ def resumen_ejecutivo_momentos():
     """Resumen ejecutivo conciso de encuentros colaborativos"""
     
     # Cargar datos
-    url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzYORLJ_nV7qv_vP2hrWmdV8Sm2rOpQPSNH9WLKJkJoHyfIOgBsrJu-uh-6_MYDg/pub?output=csv"
+    url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRxpmEEQR_RrzpGXMe8_XenUwHQPWFtT96SgOoDMAHNzW_eShHBXNHJaSwdOw4xMQ/pub?output=csv"
     df = load_data(url)
     
     if df.empty:
@@ -492,7 +492,7 @@ def momentos():
     st.markdown("---")
 
     # Cargar datos temporalmente para obtener las fases disponibles
-    url="https://docs.google.com/spreadsheets/d/e/2PACX-1vQzYORLJ_nV7qv_vP2hrWmdV8Sm2rOpQPSNH9WLKJkJoHyfIOgBsrJu-uh-6_MYDg/pub?output=csv"
+    url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRxpmEEQR_RrzpGXMe8_XenUwHQPWFtT96SgOoDMAHNzW_eShHBXNHJaSwdOw4xMQ/pub?output=csv"
     df_temp = load_data(url)
     df = load_data(url)
 
@@ -1001,7 +1001,7 @@ def momentos():
         st.warning(f"No hay datos disponibles para '{conducta_seleccionada}' o faltan las columnas necesarias ('Encuentro', 'participante' o 'tipo').")
    
    
-    url_2="https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ngk1_bT8zj18I7yzTKeI74316aXaUvKgyx8ww8OzjL0l1_1ewFwcJqW3hBFyuw/pub?output=csv"
+    url_2="https://docs.google.com/spreadsheets/d/e/2PACX-1vSK48GsEKzIzoB0TERqse6L3EeRte_5cgTMn8_nOG8G4M2dry3FxRJks9t3R-fwCQ/pub?output=csv"
     df_2 = load_data(url_2)
 
     if df_2.empty:
@@ -1191,7 +1191,7 @@ def momentos():
         else:
             st.warning("No hay datos válidos para crear la gráfica de participación por género.")
     
-    url_3="https://docs.google.com/spreadsheets/d/e/2PACX-1vSq4YCoKLIOBuBJGv-V4FwZLccdOOFYRjkrNsKrkME7tFeRSC15J2FFD2GjwgbwPg/pub?output=csv"
+    url_3="https://docs.google.com/spreadsheets/d/e/2PACX-1vRMhpi8RzNOKQYiW6vetPerkCkRZkmtsUwLB8ZEe0DRpdUusPcr3VNLMohF4r7m2Q/pub?output=csv"
     df_3 = load_data(url_3)
     
     if not df_3.empty:
