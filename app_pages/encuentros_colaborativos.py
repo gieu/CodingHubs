@@ -581,20 +581,20 @@ def momentos():
         st.info(f"📊 **Analizando todas las demás conductas:** {', '.join(conductas_analizadas)}")
     
     # Filtrar para que solo aparezca un Encuentro único por cada tipo y número de momento
-    df_filtered = df_filtered.drop_duplicates(subset=['Encuentro', 'tipo', 'Número de momento','Fase','participante'])
-    if df_filtered.empty:
+    df_map = df_filtered.drop_duplicates(subset=['Encuentro', 'tipo', 'Número de momento','Fase'])
+    if df_map.empty:
         st.warning("No hay datos válidos después de aplicar los filtros.")
         st.info(f"Valores únicos en 'Conducta' (limpiados): {df['Conducta'].unique().tolist()}")
         st.info(f"Conductas buscadas: {Conductas_permitidas}")
         return
     # Usar directamente la columna "Número de momento"
     # Crear una tabla de frecuencias para el mapa de calor
-    heatmap_data = df_filtered.groupby(['Número de momento', 'tipo']).size().reset_index(name='Frecuencia')
+    heatmap_data = df_map.groupby(['Número de momento', 'tipo']).size().reset_index(name='Frecuencia')
     
     # Crear tabla pivote para el mapa de calor
     pivot_data = heatmap_data.pivot(index='tipo', columns='Número de momento', values='Frecuencia').fillna(0)
     
-    # Definir el orden específico deseado
+    # Definir el orden específico deseado según las conductas
     orden_especifico = [
         'Anecdotas',
         'Aprendizaje PC',
@@ -614,16 +614,75 @@ def momentos():
         'Solicitar opinión',
         'Recursos didácticos',
         'Pedir ayuda',
-        'Reconocer aprendizajes',
+        'Reconocer aprendizaje',
         'Reflexión mejoras',
         'Apoyo validación',
         'Perspectiva diferente',
         'Contribución activa',
         'Preguntas profundización',
-        'Intercambio fluido de turnos',
+        'Intercambio fluido',
         'Decisiones conjuntas',
         'Rol predominante'
     ]
+
+    # Crear un DataFrame con todas las conductas esperadas y todos los momentos
+    momentos_unicos = sorted(df_map['Número de momento'].unique())
+    
+    # Filtrar el orden específico según el tipo de filtro seleccionado
+    if tipo_filtro == "Conductas asociadas al que":
+        conductas_esperadas = [
+            'Anecdotas',
+            'Aprendizaje PC',
+            'Estrategias',
+            'Materiales',
+            'Vocabulario',
+            'Características estudiantes',
+            'Preguntas estudiantes',
+            'Reflexión género',
+            'Diferencias género',
+            'Estrategias género'
+        ]
+    else:  # "Conductas asociadas al como"
+        conductas_esperadas = [
+            'Humor',
+            'Ánimo',
+            'Escucha activa',
+            'Disfrute',
+            'Valoración',
+            'Solicitar opinión',
+            'Recursos didácticos',
+            'Pedir ayuda',
+            'Reconocer aprendizaje',
+            'Reflexión mejoras',
+            'Apoyo validación',
+            'Perspectiva diferente',
+            'Contribución activa',
+            'Preguntas profundización',
+            'Intercambio fluido',
+            'Decisiones conjuntas',
+            'Rol predominante'
+        ]
+    
+    # Crear un DataFrame completo con todas las combinaciones esperadas
+    combinaciones_completas = pd.MultiIndex.from_product(
+        [conductas_esperadas, momentos_unicos],
+        names=['tipo', 'Número de momento']
+    )
+    df_completo = pd.DataFrame(index=combinaciones_completas).reset_index()
+    
+    # Merge con pivot_data original para mantener los valores existentes
+    pivot_data_reset = pivot_data.stack().reset_index()
+    pivot_data_reset.columns = ['tipo', 'Número de momento', 'Frecuencia']
+    
+    # Combinar con el DataFrame completo
+    df_merged = df_completo.merge(pivot_data_reset, on=['tipo', 'Número de momento'], how='left')
+    df_merged['Frecuencia'] = df_merged['Frecuencia'].fillna(0)
+    
+    # Pivotar nuevamente para obtener la estructura deseada
+    pivot_data = df_merged.pivot(index='tipo', columns='Número de momento', values='Frecuencia').fillna(0)
+    
+    # Asegurar que el orden de las filas sea el especificado en conductas_esperadas
+    pivot_data = pivot_data.reindex(conductas_esperadas, fill_value=0)
 
     # Filtrar solo los tipos que existen en los datos y mantener el orden especificado
     orden_relevante = [t for t in orden_especifico if t in pivot_data.index]
@@ -738,9 +797,10 @@ def momentos():
         st.plotly_chart(fig_bar_tipos, use_container_width=True, config=chart_config)
     
   
-    
+    df_line = df_filtered.drop_duplicates(subset=['Encuentro', 'tipo', 'Número de momento','Fase', 'participante'])
+
     # Obtener conductas disponibles de los datos filtrados
-    conductas_disponibles = sorted(df_filtered['Conducta'].unique())
+    conductas_disponibles = sorted(df_line['Conducta'].unique())
     
     # Establecer el índice por defecto para "Transferencia de la experticia"
     indice_por_defecto = 0
@@ -754,8 +814,8 @@ def momentos():
         help="Escoge la conducta específica que deseas analizar por participante y momento"
     )
     
-    df_puntos = df_filtered[ 
-        (df_filtered['Conducta'].isin([conducta_seleccionada]))
+    df_puntos = df_line[ 
+        (df_line['Conducta'].isin([conducta_seleccionada]))
     ].copy()
     
     # Gráfica de líneas: Momento vs Porcentaje de Encuentros 
@@ -1834,36 +1894,34 @@ def instantaneas():
             }
             participacion_melted['Tipo_Participacion'] = participacion_melted['Tipo_Participacion'].map(nombres_participacion)
 
-            # Crear el gráfico de barras agrupadas
-            fig_participacion_agrupada = px.bar(
+            # Crear el gráfico de líneas
+            fig_participacion_lineas = px.line(
                 participacion_melted,
                 x='numInstantanea',
                 y='Cantidad',
                 color='Tipo_Participacion',
-                title="Distribución de Participación por Tipo en Instantáneas",
+                title="Evolución de Participación por Instantáneas",
                 labels={
                     'numInstantanea': 'Instantáneas',
                     'Cantidad': 'Cantidad de Observaciones',
                     'Tipo_Participacion': 'Tipo de Participación'
                 },
                 color_discrete_sequence=COLOR_PALETTE['categorical'],
-                text='Cantidad',
-                barmode='group'  # Barras agrupadas, no apiladas
+                markers=True
             )
             
             # Personalizar el gráfico
-            fig_participacion_agrupada.update_traces(
-                texttemplate='%{text}',
-                textposition='outside',
-                textfont=dict(size=10, color='black')
+            fig_participacion_lineas.update_traces(
+                line=dict(width=3),
+                marker=dict(size=8, line=dict(width=2, color='white'))
             )
 
-            fig_participacion_agrupada.update_layout(
+            fig_participacion_lineas.update_layout(
                 height=600,
                 xaxis_title="Instantáneas",
                 yaxis_title="Cantidad de Observaciones",
                 legend=dict(
-                    title="Tipo de Participación",
+                    title="Tipo de Participante",
                     orientation="h",
                     yanchor="bottom",
                     y=1.02,
@@ -1875,47 +1933,47 @@ def instantaneas():
                     tickmode='array',
                     tickvals=sorted(participacion_melted['numInstantanea'].unique()),
                     ticktext=[str(int(x)) for x in sorted(participacion_melted['numInstantanea'].unique())]
-                )
+                ),
+                hovermode='x unified'
             )
 
-            st.plotly_chart(fig_participacion_agrupada, use_container_width=True, config=chart_config)
-            
-            # Generar insights automáticos para participación por tipo
-            st.subheader("🔍  Participación por Tipo")
+            st.plotly_chart(fig_participacion_lineas, use_container_width=True, config=chart_config)
+            # Generar insights automáticos para participación por participantes
+            st.subheader("🔍  Participación por Participantes")
             
             # Calcular estadísticas para insights
-            total_por_tipo_participacion = participacion_melted.groupby('Tipo_Participacion')['Cantidad'].sum().sort_values(ascending=False)
-            
-            if len(total_por_tipo_participacion) > 0:
-                insights_tipos = []
-                
-                # Identificar tipos más y menos activos
-                tipo_mas_activo = total_por_tipo_participacion.index[0]
-                valor_mas_activo = total_por_tipo_participacion.iloc[0]
-                
-                tipo_menos_activo = total_por_tipo_participacion.index[-1]
-                valor_menos_activo = total_por_tipo_participacion.iloc[-1]
-                
+            total_por_participante = participacion_melted.groupby('Tipo_Participacion')['Cantidad'].sum().sort_values(ascending=False)
+
+            if len(total_por_participante) > 0:
+                insights_participantes = []
+
+                # Identificar participantes más y menos activos
+                participante_mas_activo = total_por_participante.index[0]
+                valor_mas_activo = total_por_participante.iloc[0]
+
+                participante_menos_activo = total_por_participante.index[-1]
+                valor_menos_activo = total_por_participante.iloc[-1]
+
                 # Análisis de participación activa
-                tipos_muy_activos = total_por_tipo_participacion[total_por_tipo_participacion >= total_por_tipo_participacion.mean()].index.tolist()
-                
+                tipos_muy_activos = total_por_participante[total_por_participante >= total_por_participante.mean()].index.tolist()
+
                 if len(tipos_muy_activos) >= 2:
                     tipos_activos_str = " y ".join(tipos_muy_activos[:2]) if len(tipos_muy_activos) == 2 else ", ".join(tipos_muy_activos[:-1]) + " y " + tipos_muy_activos[-1]
-                    insights_tipos.append(f"💪 **Participación colaborativa**: En los momentos de conversación o desarrollo de actividades, tanto **{tipos_activos_str}** participaban activamente.")
+                    insights_participantes.append(f"💪 **Participación colaborativa**: En los momentos de conversación o desarrollo de actividades, tanto **{tipos_activos_str}** participaban activamente.")
                 else:
-                    insights_tipos.append(f"💪 **Participación dominante**: **{tipo_mas_activo}** lidera claramente la participación activa en las instantáneas.")
-                
+                    insights_participantes.append(f"💪 **Participación dominante**: **{participante_mas_activo}** lidera claramente la participación activa en las instantáneas.")
+
                 # Análisis de participación mínima
-                if valor_menos_activo < total_por_tipo_participacion.mean() * 0.5:
-                    insights_tipos.append(f"⚠️ **Participación limitada**: La participación de **{tipo_menos_activo}** fue mínima, con solo {valor_menos_activo} observaciones en total.")
-                
+                if valor_menos_activo < total_por_participante.mean() * 0.5:
+                    insights_participantes.append(f"⚠️ **Participación limitada**: La participación de **{participante_menos_activo}** fue mínima, con solo {valor_menos_activo} observaciones en total.")
+
                 # Análisis de distribución
-                coeficiente_variacion = total_por_tipo_participacion.std() / total_por_tipo_participacion.mean()
+                coeficiente_variacion = total_por_participante.std() / total_por_participante.mean()
                 if coeficiente_variacion > 0.5:
-                    insights_tipos.append("📊 **Distribución desigual**: Existe una marcada diferencia en los niveles de participación entre los diferentes tipos de participantes.")
+                    insights_participantes.append("📊 **Distribución desigual**: Existe una marcada diferencia en los niveles de participación entre los diferentes tipos de participantes.")
                 else:
-                    insights_tipos.append("📊 **Distribución equilibrada**: Los diferentes tipos de participantes muestran niveles similares de participación.")
-                
+                    insights_participantes.append("📊 **Distribución equilibrada**: Los diferentes tipos de participantes muestran niveles similares de participación.")
+
                 # Análisis por instantáneas
                 participacion_por_instantanea_pivot = participacion_melted.pivot(index='numInstantanea', columns='Tipo_Participacion', values='Cantidad').fillna(0)
                 
@@ -1929,12 +1987,12 @@ def instantaneas():
                     tipo_mas_consistente = presencia_por_tipo.idxmax()
                     instantaneas_presentes = presencia_por_tipo.iloc[presencia_por_tipo.argmax()]
                     total_instantaneas = len(participacion_por_instantanea_pivot)
-                    
-                    insights_tipos.append(f"🌟 **Instantánea destacada**: La instantánea {instantanea_mas_activa} registra la mayor actividad colaborativa total.")
-                    insights_tipos.append(f"🔄 **Consistencia**: **{tipo_mas_consistente}** mantiene presencia en {instantaneas_presentes} de {total_instantaneas} instantáneas analizadas.")
-                
+
+                    insights_participantes.append(f"🌟 **Instantánea destacada**: La instantánea {instantanea_mas_activa} registra la mayor actividad colaborativa total.")
+                    insights_participantes.append(f"🔄 **Consistencia**: **{tipo_mas_consistente}** mantiene presencia en {instantaneas_presentes} de {total_instantaneas} instantáneas analizadas.")
+
                 # Mostrar insights
-                for insight in insights_tipos:
+                for insight in insights_participantes:
                     st.markdown(insight)
             
         else:
