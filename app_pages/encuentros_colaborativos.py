@@ -772,8 +772,8 @@ def momentos():
                 title="Número de Momento"
             ),
             yaxis=dict(
-            title="Porcentaje (%)",
-            range=[0, max(freq_por_momento['Porcentaje']) * 1.1]
+                title="Porcentaje (%)",
+                range=[0, 100]            
             )
         )
         st.plotly_chart(fig_bar_momentos, use_container_width=True, config=chart_config)
