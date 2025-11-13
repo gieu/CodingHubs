@@ -13,12 +13,16 @@ def _():
 
 @app.cell
 def _(urllib):
-    BASE_URL = "https://docs.google.com/spreadsheets/d/1QqNppXXmSonnTDs3uplG3DtgvWW3pEjExcOh2Q_xb4M/gviz/tq?tqx=out:csv&sheet="+ urllib.parse.quote_plus("Reporte de mentoría Coding Hubs")
+    BASE_URL = (
+        "https://docs.google.com/spreadsheets/d/1QqNppXXmSonnTDs3uplG3DtgvWW3pEjExcOh2Q_xb4M/gviz/tq?tqx=out:csv&sheet="
+        + urllib.parse.quote_plus("Reporte de mentoría Coding Hubs")
+    )
     # Los nombres de los docentes están en otra hoja
-    NOMBRES_URL = "https://docs.google.com/spreadsheets/d/1QqNppXXmSonnTDs3uplG3DtgvWW3pEjExcOh2Q_xb4M/gviz/tq?tqx=out:csv&sheet=group_xt7jo03"	
+    NOMBRES_URL = "https://docs.google.com/spreadsheets/d/1QqNppXXmSonnTDs3uplG3DtgvWW3pEjExcOh2Q_xb4M/gviz/tq?tqx=out:csv&sheet=group_xt7jo03"
     ASISTENCIA_URL = "https://docs.google.com/spreadsheets/d/1T90vs6pBy12IpLvbxV4X-UhPUj2mDbxY/gviz/tq?tqx=out:csv&sheet=Asistencia%20CHM"
-    BITACORA_AVANCES = "https://docs.google.com/spreadsheets/d/1VGDTDAdsqRcaWDWqn6gwvw2q-wY3gQEB7JilCXW2qh0/gviz/tq?tqx=out:csv"
-
+    BITACORA_AVANCES = (
+        "https://docs.google.com/spreadsheets/d/1VGDTDAdsqRcaWDWqn6gwvw2q-wY3gQEB7JilCXW2qh0/gviz/tq?tqx=out:csv"
+    )
     return ASISTENCIA_URL, BASE_URL, BITACORA_AVANCES, NOMBRES_URL
 
 
@@ -54,6 +58,26 @@ def _(base, nombres):
     base_completa = nombres.merge(base, left_on="_parent_index", right_on="_index")
     base_completa
     return (base_completa,)
+
+
+@app.cell
+def _(base_completa):
+    base_filtrada = base_completa[
+        base_completa["Información Institución Educativa/Docentes Asistentes/Rol"] == "Docente"
+    ].copy()
+    # revisar
+    base_filtrada
+    return (base_filtrada,)
+
+
+@app.cell
+def _(base_filtrada):
+    base_filtrada["Reporte de acciones de acompañamiento/Indique la duración del acompañamiento, en minutos."] = (
+        base_filtrada[
+            "Reporte de acciones de acompañamiento/Indique la duración del acompañamiento, en minutos."
+        ].astype(int)
+    )
+    return
 
 
 @app.cell
@@ -150,28 +174,28 @@ def _():
 
 
 @app.cell
-def _():
-    # group duplicates in caracterizacion and desafio by aggregating numerical columns with sum and categorical columns with first
-    # def aggregate_caracterizacion(df, id_col):
-    #     agg_dict = {}
-    #     for col in df.columns:
-    #         if col == id_col:
-    #             continue
-    #         elif pd.api.types.is_numeric_dtype(df[col]):
-    #             agg_dict[col] = "sum"
-    #         else:
-    #             agg_dict[col] = lambda x: x.mode().iloc[0] if not x.mode().empty else x.iloc[0]
-    #     aggregated_df = df.groupby(id_col).agg(agg_dict).reset_index()
-    #     # 1 hot encode "Línea del proyecto"
-    #     df["Línea del proyecto"] = df["Línea del proyecto"].apply(
-    #         lambda x: x.split(",")[0] if pd.notnull(x) else x
-    #     )
+def _(base_filtrada, pd):
+    # group duplicates in base numerical columns with sum and categorical columns with mode
+    def aggregate_base(df, id_col):
+        agg_dict = {}
+        for col in df.columns:
+            if col == id_col:
+                continue
+            elif pd.api.types.is_numeric_dtype(df[col]):
+                agg_dict[col] = "sum"
+            else:
+                agg_dict[col] = lambda x: x.mode().iloc[0] if not x.mode().empty else x.iloc[0]
+        aggregated_df = df.groupby(id_col).agg(agg_dict).reset_index()
+        # 1 hot encode
+        # df["Línea del proyecto"] = df["Línea del proyecto"].apply(
+        #     lambda x: x.split(",")[0] if pd.notnull(x) else x
+        # )
 
-    #     linea_dummies = pd.get_dummies(df["Línea del proyecto"], prefix="linea", dtype=int)
-    #     linea_dummies[id_col] = df[id_col]
-    #     linea_agg = linea_dummies.groupby(id_col).sum().reset_index()
-    #     aggregated_df = pd.merge(aggregated_df, linea_agg, on=id_col, how="left")
-    #     return aggregated_df
+        # linea_dummies = pd.get_dummies(df["Línea del proyecto"], prefix="linea", dtype=int)
+        # linea_dummies[id_col] = df[id_col]
+        # linea_agg = linea_dummies.groupby(id_col).sum().reset_index()
+        # aggregated_df = pd.merge(aggregated_df, linea_agg, on=id_col, how="left")
+        return aggregated_df
 
 
     # def aggregate_desafio(df, id_col):
@@ -195,13 +219,26 @@ def _():
     #     return aggregated_df
 
 
-    # caracterizacion_agg = aggregate_caracterizacion(caracterizacion, id_cols["caracterizacion"])
-    # desafio_agg = aggregate_desafio(desafio, id_cols["desafio"])
+    base_agg = aggregate_base(base_filtrada, "Información Institución Educativa/Docentes Asistentes/Docentes")
+    return (base_agg,)
+
+
+@app.cell
+def _(base_agg):
+    base_agg
     return
 
 
 @app.cell
-def _(asistencia, base_completa, bitacora_final, id_cols, pd):
+def _(base_filtrada):
+    base_filtrada[
+        base_filtrada["Información Institución Educativa/Docentes Asistentes/Docentes"] == "Alan David Muñoz"
+    ]
+    return
+
+
+@app.cell
+def _(asistencia, base_agg, bitacora_final, id_cols, pd):
     def merge_dataframes(dfs, id_cols):
         merged_df = dfs[0].copy()
         for i in range(1, len(dfs)):
@@ -220,13 +257,13 @@ def _(asistencia, base_completa, bitacora_final, id_cols, pd):
 
 
     # Make all ids into object type to avoid merge issues
-    for i, df in enumerate([base_completa, asistencia, bitacora_final]):
+    for i, df in enumerate([base_agg, asistencia, bitacora_final]):
         id_col = id_cols[list(id_cols.keys())[i]]
         df[id_col] = df[id_col].astype(str)
         df[id_col] = df[id_col].str.strip()
         df[id_col] = df[id_col].str.replace("\.", "", regex=True)
 
-    dataframes = [base_completa, asistencia, bitacora_final]
+    dataframes = [base_agg, asistencia, bitacora_final]
     merged_df = merge_dataframes(dataframes, id_cols)
     return dataframes, merged_df
 
@@ -251,17 +288,6 @@ def _(dataframes, id_cols):
 
 
 @app.cell
-def _(caracterizacion, id_cols):
-    caracterizacion[caracterizacion.duplicated(subset=[id_cols["caracterizacion"]], keep=False)]
-    return
-
-
-@app.cell
-def _():
-    return
-
-
-@app.cell
 def _(merged_df):
     merged_df.columns.tolist()
     return
@@ -276,50 +302,45 @@ def _(merged_df):
 @app.cell
 def _():
     cols_to_keep_by_source = {
-        "Codigo": "base",
-        "Mentor": "base",
-        "UG": "base",
-        "Region": "base",
-        "Departamento": "base",
-        "Zona": "base",
-        "Centro de interés": "base",
-        "Género": "base",
-        "Género.1": "base",
-        "Nombre completo del par Experto": "base",
-        "Identificación": "base",
-        "De acuerdo con la asignatura que orienta, defina el área que aplica (STEM)": "base",
-        "Categoría Junior o Senior 2024": "base",
-        "Categoría Senior o Expert 2025": "base",
-        "¿El grupo de estudiantes para 2025 es el mismo con el que se hizo la transferencia en el 2024?": "base",
-        "Grados": "base",
-        "Nivelación Junior - 1": "formacion",
-        "Nivelación Junior - 2": "formacion",
-        "Nivelación Junior - Total": "formacion",
-        "Taller 1-Marzo": "formacion",
-        "Nivelación Senior - Expert": "formacion",
-        "Nivelaciones TOTAL": "formacion",
-        "Total horas de mentoría ": "formacion",
-        "Total mentorías ": "formacion",
-        "Masterclass #1 ¡Potencia tu impacto en el aula! ": "formacion",
-        "Taller2": "formacion",
-        "Masterclass Hackeando el código": "formacion",
-        "Encuentro colaborativo 1": "formacion",
-        "Total Horas 2025": "formacion",
-        "Horas 2024": "formacion",
-        "iniciativa_Inventario de Biodiversidad": "desafio",
-        "iniciativa_Medición de área en la escuela": "desafio",
-        "iniciativa_Monitoreo de actividad física": "desafio",
-        "Cantidad de estudiantes de sexo masculino": "desafio",
-        "Cantidad de estudiantes de sexo femenino": "desafio",
-        "Cantidad de estudiantes con discapacidad o trastornos del aprendizaje que participaron.": "desafio",
+        "Información Institución Educativa/Docentes Asistentes/Docentes": "base",
+        "Información Institución Educativa/Docentes Asistentes/Rol": "base",
+        "Datos de identificación del mentor(a)/Nombre del mentor": "base",
+        "Información Institución Educativa/Instituciones": "base",
+        "Reporte de acciones de acompañamiento/Indique la duración del acompañamiento, en minutos.": "base",
+        "Reporte de acciones de acompañamiento/Indique la duración del acompañamiento, en minutos.": "base",
+        "Reporte de acciones de acompañamiento/Seleccione la acción realizada": "base",
+        "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Plan de área": "base",
+        "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Apoyo en la implementación de guías de pensamiento computacional (guías de Colombia programa)": "base",
+        "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Revisión de recursos para el fomento del Pensamiento Computacional": "base",
+        "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Planeación de actividades desconectadas": "base",
+        "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Planeación deactividades conectadas": "base",
+        "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Socialización del Plan de acompañamiento Institucional PAI": "base",
+        "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Avance de acciones del PAI": "base",
+        "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Apoyo al desarrollo de proyectos para el Tinkering Challenge": "base",
+        "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Implementación acciones en pro de la equidad de género": "base",
+        "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Planeación de clases con estrategias didácticas para la enseñanza del pensamiento computacional (Usa Modifica Crea, PRIMM, Preguntas de Parsons, Ondas semánticas, Programación en vivo, entre otras)": "base",
+        "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Apoyo para preparar estudiantes para el CodeFest": "base",
+        "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Planeación de clases incorporando prácticas de la taxonomía de Weintrop en otras áreas STEM": "base",
+        "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Nivelación de contenidos para docentes nuevos o que no asisten a taller": "base",
+        "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Apoyo en la preparación de espacios de experticia colaborativa": "base",
+        "Cédula": "asistencia",
+        "Categoría del docente": "asistencia",
+        "Sexo": "asistencia",
+        "Asistencia a Taller 1: Radio + pines": "asistencia",
+        "Asistencia a taller 2: Habilidades de mentoría": "asistencia",
+        "Asistencia a taller 2 nivel Senior pro: IA + microbit y simulación computacional y física": "asistencia",
+        "Encuentro colaborativo 1": "asistencia",
+        "Año Ingreso CH": "asistencia",
         "tiempo_promedio_duracion_sesion": "bitacora",
         "frecuencia_uso_guia_semanas": "bitacora",
         "num_usos_guia": "bitacora",
-        "linea_1. Futuro sostenible": "codigo_en_accion",
-        "linea_2. Experiencias Interactivas Educativas": "codigo_en_accion",
-        "linea_3. Juegos Interactivos": "codigo_en_accion",
-        "# Niñas presentando el proyecto en CA": "codigo_en_accion",
-        "# Niños presentando el proyecto en CA": "codigo_en_accion",
+        "Cantidad de estudiantes de sexo masculino": "bitacora",
+        "Cantidad de estudiantes de sexo femenino": "bitacora",
+        "Cantidad de estudiantes con discapacidad o trastornos del aprendizaje que participaron.": "bitacora",
+        "tiempo_promedio_duracion_sesion": "bitacora",
+        "frecuencia_uso_guia_semanas": "bitacora",
+        "num_usos_guia": "bitacora",
+        "guias_usadas": "codigo_en_accion",
     }
     return (cols_to_keep_by_source,)
 
@@ -332,7 +353,39 @@ def _(cols_to_keep_by_source, merged_df):
 
 @app.cell
 def _(raw_merged):
+    raw_merged["Información Institución Educativa/Docentes Asistentes/Docentes"].nunique()
+    return
+
+
+@app.cell
+def _(raw_merged):
     raw_merged
+    return
+
+
+@app.cell
+def _(asistencia, base_agg, pd):
+    aligned_names =pd.concat(
+        [
+            base_agg["Información Institución Educativa/Docentes Asistentes/Docentes"],
+            asistencia["Nombre"].sort_values(ascending=True).reset_index()["Nombre"],
+        ],
+        axis=1,
+        ignore_index=True,
+    )
+    # Find names that do not match per row
+    aligned_names.columns = ["base", "asistencia"]
+    aligned_names["base"] = aligned_names["base"].str.strip()
+    aligned_names["asistencia"] = aligned_names["asistencia"].str.strip()
+    aligned_names["match"] = aligned_names["base"] == aligned_names["asistencia"]
+    mismatched_names = aligned_names[~aligned_names["match"]]
+    mismatched_names
+    return
+
+
+@app.cell
+def _(asistencia):
+    asistencia["Nombre"].sort_values(ascending=True)
     return
 
 
