@@ -77,12 +77,31 @@ def _(base_filtrada):
             "Reporte de acciones de acompañamiento/Indique la duración del acompañamiento, en minutos."
         ].astype(int)
     )
-    return
 
-
-@app.cell
-def _():
-    # revisar Bach Sebastián Castañeda Reyes duplicado
+    base_filtrada["Información Institución Educativa/Docentes Asistentes/Docentes"] = base_filtrada[
+        "Información Institución Educativa/Docentes Asistentes/Docentes"
+    ].replace(
+        {
+            "Amanda Galindo Carrill": "Amanda Galindo Carrillo",
+            "Andrés Felipe Osorio Gonzalez": "Andrés Felipe Osorio González",
+            "Angelica Maria Gomez Henao": "Angélica María Gomez Henao",
+            "Bach Sebastian Castañeda Reyes": "Bach Sebastián Castañeda Reyes",
+            "Cristian Camilo Perez Arias": "Cristian Camilo Pérez Arias",
+            "Daniel Felipe Naranjo Perez": "Daniel Felipe Naranjo Pérez",
+            "Diego Fernando Garcia Florez": "Diego Fernando García Flórez",
+            "Hector Alejandro Ruiz": "Héctor Alejandro Ruiz Villa",
+            "Joly Patricia Duque Lopez": "Joly Patricia Duque López",
+            "Julieth Johanna Cordon Sierra": "Julieth Johanna Cordón Sierra",
+            "Leonardo Montes Marin": "Leonardo Montes Marín",
+            "Lina Marcela Buitrago Chalarcá": "Lina Marcela Buitrago Chalarca",
+            "Lorena Alvarez Ocampo": "Lorena Álvarez Ocampo",
+            "Monica del Rocio Moreno Guerrero": "Mónica del Rocío Moreno Guerrero",
+            "Nini Johanna Gutierrez": "Nini Johanna Gutiérrez Moreno",
+            "Norma Constanza Valencia Angel": "Norma Constanza Valencia Ángel",
+            "Sam Lopez": "Sam López Gómez",
+        }
+    )
+    base_filtrada
     return
 
 
@@ -153,6 +172,17 @@ def _(bitacora):
             "¿De qué grado es la guía que eligió la/el par experto?": "guias_usadas",
         },
         inplace=True,
+    )
+
+    bitacora_final["Docente de la institución educativa"] = bitacora_final[
+        "Docente de la institución educativa"
+    ].replace(
+        {
+            "Angelica Maria Gomez Henao": "Angélica María Gomez Henao",
+            "Bach Sebastian Castañeda Reyes": "Bach Sebastián Castañeda Reyes",
+            "Leonardo Montes Marin": "Leonardo Montes Marín",
+            "Sam Lopez": "Sam López Gómez",
+        }
     )
     return (bitacora_final,)
 
@@ -230,14 +260,6 @@ def _(base_agg):
 
 
 @app.cell
-def _(base_filtrada):
-    base_filtrada[
-        base_filtrada["Información Institución Educativa/Docentes Asistentes/Docentes"] == "Alan David Muñoz"
-    ]
-    return
-
-
-@app.cell
 def _(asistencia, base_agg, bitacora_final, id_cols, pd):
     def merge_dataframes(dfs, id_cols):
         merged_df = dfs[0].copy()
@@ -303,12 +325,9 @@ def _(merged_df):
 def _():
     cols_to_keep_by_source = {
         "Información Institución Educativa/Docentes Asistentes/Docentes": "base",
-        "Información Institución Educativa/Docentes Asistentes/Rol": "base",
         "Datos de identificación del mentor(a)/Nombre del mentor": "base",
         "Información Institución Educativa/Instituciones": "base",
         "Reporte de acciones de acompañamiento/Indique la duración del acompañamiento, en minutos.": "base",
-        "Reporte de acciones de acompañamiento/Indique la duración del acompañamiento, en minutos.": "base",
-        "Reporte de acciones de acompañamiento/Seleccione la acción realizada": "base",
         "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Plan de área": "base",
         "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Apoyo en la implementación de guías de pensamiento computacional (guías de Colombia programa)": "base",
         "Reporte de acciones de acompañamiento/Tema desarrollado en la mentoría/Revisión de recursos para el fomento del Pensamiento Computacional": "base",
@@ -334,13 +353,7 @@ def _():
         "tiempo_promedio_duracion_sesion": "bitacora",
         "frecuencia_uso_guia_semanas": "bitacora",
         "num_usos_guia": "bitacora",
-        "Cantidad de estudiantes de sexo masculino": "bitacora",
-        "Cantidad de estudiantes de sexo femenino": "bitacora",
-        "Cantidad de estudiantes con discapacidad o trastornos del aprendizaje que participaron.": "bitacora",
-        "tiempo_promedio_duracion_sesion": "bitacora",
-        "frecuencia_uso_guia_semanas": "bitacora",
-        "num_usos_guia": "bitacora",
-        "guias_usadas": "codigo_en_accion",
+        "guias_usadas": "bitacora",
     }
     return (cols_to_keep_by_source,)
 
@@ -365,7 +378,7 @@ def _(raw_merged):
 
 @app.cell
 def _(asistencia, base_agg, pd):
-    aligned_names =pd.concat(
+    aligned_names = pd.concat(
         [
             base_agg["Información Institución Educativa/Docentes Asistentes/Docentes"],
             asistencia["Nombre"].sort_values(ascending=True).reset_index()["Nombre"],
@@ -380,12 +393,31 @@ def _(asistencia, base_agg, pd):
     aligned_names["match"] = aligned_names["base"] == aligned_names["asistencia"]
     mismatched_names = aligned_names[~aligned_names["match"]]
     mismatched_names
+    return (mismatched_names,)
+
+
+@app.cell
+def _(mismatched_names):
+    # map base to asistencia on mismatches
+    mismatch_map = {x["base"]: x["asistencia"] for _, x in mismatched_names.iterrows()}
+    mismatch_map
     return
 
 
 @app.cell
-def _(asistencia):
-    asistencia["Nombre"].sort_values(ascending=True)
+def _(base_agg, bitacora_final):
+    nombres_base = base_agg["Información Institución Educativa/Docentes Asistentes/Docentes"].tolist()
+    nombres_bitacora = bitacora_final["Docente de la institución educativa"].tolist()
+
+    # Find nombres in bitacora that are not in base
+    nombres_no_en_base = [nombre for nombre in nombres_bitacora if nombre not in nombres_base]
+    nombres_no_en_base
+    return
+
+
+@app.cell
+def _(raw_merged):
+    raw_merged
     return
 
 
@@ -420,49 +452,36 @@ def _(raw_merged):
 @app.cell
 def _():
     rename_dict = {
-        "codigo_base": "codigo_base",
-        "mentor_base": "mentor_base",
-        "ug_base": "ug_base",
-        "region_base": "region_base",
-        "departamento_base": "departamento_base",
-        "zona_base": "zona_base",
-        "centro_de_interes_base": "centro_de_interes_base",
-        "genero_base": "genero_rector_base",
-        "nombre_completo_del_par_experto_base": "nombre_base",
-        "identificacion_base": "identificacion_base",
-        "genero1_base": "genero_par_experto_base",
-        "de_acuerdo_con_la_asignatura_que_orienta_defina_el_area_que_aplica_stem_base": "area_stem_base",
-        "categoria_junior_o_senior_2024_base": "categoria_2024_base",
-        "categoria_senior_o_expert_2025_base": "categoria_2025_base",
-        "el_grupo_de_estudiantes_para_2025_es_el_mismo_con_el_que_se_hizo_la_transferencia_en_el_2024_base": "mismo_grupo_2025_base",
-        "grados_base": "grados_base",
-        "nivelacion_junior__1_formacion": "nivelacion_junior_1_formacion",
-        "nivelacion_junior__2_formacion": "nivelacion_junior_2_formacion",
-        "nivelacion_junior__total_formacion": "nivelacion_junior_total_formacion",
-        "taller_1marzo_formacion": "taller_1_formacion",
-        "nivelacion_senior__expert_formacion": "nivelacion_senior_expert_formacion",
-        "nivelaciones_total_formacion": "nivelaciones_total_formacion",
-        "total_horas_de_mentoria_formacion": "total_horas_de_mentoria_formacion",
-        "total_mentorias_formacion": "total_mentorias_formacion",
-        "masterclass_1_potencia_tu_impacto_en_el_aula_formacion": "masterclass_1_formacion",
-        "taller2_formacion": "taller_2_formacion",
-        "masterclass_hackeando_el_codigo_formacion": "masterclass_2_formacion",
-        "encuentro_colaborativo_1_formacion": "encuentro_colaborativo_1_formacion",
-        "total_horas_2025_formacion": "total_horas_2025_formacion",
-        "horas_2024_formacion": "horas_2024_formacion",
-        "cantidad_de_estudiantes_de_sexo_masculino_desafio": "estudiantes_masculino_desafio",
-        "cantidad_de_estudiantes_de_sexo_femenino_desafio": "estudiantes_femenino_desafio",
-        "cantidad_de_estudiantes_con_discapacidad_o_trastornos_del_aprendizaje_que_participaron_desafio": "estudiantes_discapacidad_desafio",
-        "iniciativa_inventario_de_biodiversidad_desafio": "iniciativa_biodiversidad_desafio",
-        "iniciativa_medicion_de_area_en_la_escuela_desafio": "iniciativa_medicion_desafio",
-        "iniciativa_monitoreo_de_actividad_fisica_desafio": "iniciativa_actividad_fisica_desafio",
+        "informacion_institucion_educativadocentes_asistentesdocentes_base": "nombre_docente_base",
+        "datos_de_identificacion_del_mentoranombre_del_mentor_base": "nombre_mentor_base",
+        "informacion_institucion_educativainstituciones_base": "institucion_educativa_base",
+        "reporte_de_acciones_de_acompanamientoindique_la_duracion_del_acompanamiento_en_minutos_base": "duracion_acompanamiento_minutos_base",
+        "reporte_de_acciones_de_acompanamientotema_desarrollado_en_la_mentoriaplan_de_area_base": "plan_de_area_base",
+        "reporte_de_acciones_de_acompanamientotema_desarrollado_en_la_mentoriaapoyo_en_la_implementacion_de_guias_de_pensamiento_computacional_guias_de_colombia_programa_base": "apoyo_implementacion_guias_pc_base",
+        "reporte_de_acciones_de_acompanamientotema_desarrollado_en_la_mentoriarevision_de_recursos_para_el_fomento_del_pensamiento_computacional_base": "revision_recursos_fomento_pc_base",
+        "reporte_de_acciones_de_acompanamientotema_desarrollado_en_la_mentoriaplaneacion_de_actividades_desconectadas_base": "planeacion_actividades_desconectadas_base",
+        "reporte_de_acciones_de_acompanamientotema_desarrollado_en_la_mentoriaplaneacion_deactividades_conectadas_base": "planeacion_actividades_conectadas_base",
+        "reporte_de_acciones_de_acompanamientotema_desarrollado_en_la_mentoriasocializacion_del_plan_de_acompanamiento_institucional_pai_base": "socializacion_pai_base",
+        "reporte_de_acciones_de_acompanamientotema_desarrollado_en_la_mentoriaavance_de_acciones_del_pai_base": "avance_acciones_pai_base",
+        "reporte_de_acciones_de_acompanamientotema_desarrollado_en_la_mentoriaapoyo_al_desarrollo_de_proyectos_para_el_tinkering_challenge_base": "apoyo_tinkering_challenge_base",
+        "reporte_de_acciones_de_acompanamientotema_desarrollado_en_la_mentoriaimplementacion_acciones_en_pro_de_la_equidad_de_genero_base": "implementacion_acciones_equidad_genero_base",
+        "reporte_de_acciones_de_acompanamientotema_desarrollado_en_la_mentoriaplaneacion_de_clases_con_estrategias_didacticas_para_la_ensenanza_del_pensamiento_computacional_usa_modifica_crea_primm_preguntas_de_parsons_ondas_semanticas_programacion_en_vivo_entre_otras_base": "estrategias_pc_base",
+        "reporte_de_acciones_de_acompanamientotema_desarrollado_en_la_mentoriaapoyo_para_preparar_estudiantes_para_el_codefest_base": "apoyo_preparacion_codefest_base",
+        "reporte_de_acciones_de_acompanamientotema_desarrollado_en_la_mentoriaplaneacion_de_clases_incorporando_practicas_de_la_taxonomia_de_weintrop_en_otras_areas_stem_base": "planeacion_clases_taxonomia_weintrop_base",
+        "reporte_de_acciones_de_acompanamientotema_desarrollado_en_la_mentorianivelacion_de_contenidos_para_docentes_nuevos_o_que_no_asisten_a_taller_base": "nivelacion_contenidos_docentes_nuevos_base",
+        "reporte_de_acciones_de_acompanamientotema_desarrollado_en_la_mentoriaapoyo_en_la_preparacion_de_espacios_de_experticia_colaborativa_base": "apoyo_espacios_experticia_colaborativa_base",
+        "cedula_asistencia": "cedula_asistencia",
+        "categoria_del_docente_asistencia": "categoria_docente_asistencia",
+        "sexo_asistencia": "sexo_asistencia",
+        "asistencia_a_taller_1_radio__pines_asistencia": "taller_1_asistencia",
+        "asistencia_a_taller_2_habilidades_de_mentoria_asistencia": "taller_2_asistencia",
+        "asistencia_a_taller_2_nivel_senior_pro_ia__microbit_y_simulacion_computacional_y_fisica_asistencia": "taller_2_senior_pro_asistencia",
+        "encuentro_colaborativo_1_asistencia": "encuentro_colaborativo_1_asistencia",
+        "ano_ingreso_ch_asistencia": "ano_ingreso_ch_asistencia",
+        "tiempo_promedio_duracion_sesion_bitacora": "tiempo_promedio_duracion_sesion_bitacora",
         "frecuencia_uso_guia_semanas_bitacora": "frecuencia_uso_guia_semanas_bitacora",
         "num_usos_guia_bitacora": "num_usos_guia_bitacora",
-        "_ninas_presentando_el_proyecto_en_ca_codigo_en_accion": "estudiantes_femenino_codigo_en_accion",
-        "_ninos_presentando_el_proyecto_en_ca_codigo_en_accion": "estudiantes_masculino_codigo_en_accion",
-        "linea_1_futuro_sostenible_codigo_en_accion": "linea_futuro_sostenible_codigo_en_accion",
-        "linea_2_experiencias_interactivas_educativas_codigo_en_accion": "linea_experiencias_codigo_en_accion",
-        "linea_3_juegos_interactivos_codigo_en_accion": "linea_juegos_codigo_en_accion",
+        "guias_usadas_bitacora": "guias_usadas_bitacora",
     }
     return (rename_dict,)
 
@@ -476,35 +495,10 @@ def _(raw_merged, rename_dict):
 
 @app.cell
 def _(final_df):
-    final_df["categoria_2025_base"] = (
-        final_df["categoria_2025_base"]
-        .str.lower()
-        .map(
-            {
-                "grupo senior": "Grupo Junior",
-                "grupo expert": "Grupo Senior",
-            }
-        )
-    )
-    final_df["genero_par_experto_base"] = (
-        final_df["genero_par_experto_base"]
-        .str.lower()
-        .map({"hombre": "hombre", "mujer": "mujer"})
-        .fillna("mujer")
-    )
-    final_df["area_stem_base"] = final_df["area_stem_base"].replace(
-        {
-            "Tecnología e informática": "Tecnología/Informática",
-            "Preescocolar": "Primaria",
-            "Tecnología e Informática, Matemáticas": "Tecnología/Informática",
-        }
-    )
-    return
+    for col in ['taller_1_asistencia', 'taller_2_asistencia', 'taller_2_senior_pro_asistencia', 'encuentro_colaborativo_1_asistencia']:
+        final_df.loc[:, col] = final_df.loc[:, col].fillna("").str.lower().map({'sí': True}).fillna(False)
 
-
-@app.cell
-def _(final_df):
-    final_df["area_stem_base"].value_counts()
+    final_df
     return
 
 
@@ -516,7 +510,7 @@ def _(final_df):
 
 @app.cell
 def _(final_df):
-    final_df.to_csv("../data/limpieza/implementacion_limpio.csv", index=False)
+    final_df.to_csv("../data/limpieza/implementacion_limpio_coding_hub.csv", index=False)
     return
 
 
