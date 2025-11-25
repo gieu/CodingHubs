@@ -1524,6 +1524,14 @@ def instantaneas():
     st.subheader("📊 Mapa de Calor - Acción Momento vs Instantáneas")
     
     if 'accionMomento' in df_inst_filtered.columns and 'numInstantanea' in df_inst_filtered.columns:
+        # Crear una copia del dataframe para modificar los textos
+        reemplazos_texto = {
+            'Escuchan instrucciones para el desarrollo de una actividad de un facilitador del encuentro (ej. mentor)': 'Escuchan instrucciones por parte de un mentor',
+            'Escuchan una explicación temática de un facilitador del encuentro (ej. mentor)': 'Escuchan una explicación temática por parte de un mentor'
+        }
+        # Aplicar reemplazos
+        df_inst_filtered['accionMomento'] = df_inst_filtered['accionMomento'].replace(reemplazos_texto)
+        
         # Crear tabla de frecuencias para el mapa de calor
         heatmap_data = df_inst_filtered.groupby(['accionMomento', 'numInstantanea']).size().reset_index(name='Frecuencia')
         
@@ -1613,7 +1621,13 @@ def instantaneas():
                 text='Total_Observaciones'
             )
             fig_instantaneas.update_traces(texttemplate='%{text}', textposition='outside')
-            fig_instantaneas.update_layout(showlegend=False, height=400)
+            fig_instantaneas.update_layout(
+                showlegend=False, 
+                height=400,
+                yaxis=dict(
+                    range=[0, max(freq_por_instantanea['Total_Observaciones']) * 1.15]
+                )
+            )
             st.plotly_chart(fig_instantaneas, use_container_width=True, config=chart_config)
 
     # Gráfico de barras apiladas: Participación por género en instantáneas
