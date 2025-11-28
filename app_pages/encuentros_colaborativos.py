@@ -1479,11 +1479,38 @@ def instantaneas():
     st.markdown("---")
     
     # URL del CSV para instantáneas
-    url_instantaneas = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTr5c9SzFRrIbWW57I0K7RpSkqtedGpDRJNPMKtVRfDEgMfcrk50PyGtbd9WdUiGcBDuzlZpA7NgZnA/pub?output=csv"
+    url_instantaneas = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQVjpXfTYh6SWRLYmbo1oD9cmEKCMR9uL0jAoNd2x4zt7s45UUDEMQeL5I3OnBpuYOwWBs7ooMf9tHL/pub?output=csv"
     
     # Cargar datos
     df_inst = load_data(url_instantaneas)
+    # Renombrar columnas según el diccionario proporcionado
+    rename_dict = {
+        'Fecha de inicio': 'fechaInicio',
+        'Fecha de finalización': 'fechaFin',
+        'Tipo de respuesta': 'tipoRespuesta',
+        'Dirección IP': 'ip',
+        'Progreso': 'progreso',
+        'Finalizado': 'finalizado',
+        'Fecha registrada': 'fechaRegistro',
+        'Encuentro': 'encuentro',
+        'ID de respuesta': 'idRespuesta',
+        'Antes de finalizar el registro de instantáneas, por favor confirma algunos datos: - Nombre del/la observador(a)': 'nombreObservador',
+        'Antes de finalizar el registro de instantáneas, por favor confirma algunos datos: - Correo electrónico': 'correoObservador',
+        'IDEncuentro': 'idEncuentro',
+        'accion momento': 'accionMomento',
+        'accion momento - otra': 'accionMomentoOtra',
+        '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - Pares expertos': 'participaPares',
+        '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - Docentes acompañados': 'participaDocentes',
+        '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - Mentores': 'participaMentores',
+        '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - No aplica': 'participaNA',
+        '¿Quiénes participan activamente en la conversación o actividad en este momento? Si no está ocurriendo una conversación o actividad en este momento, selecciona "No aplica"': 'participantes',
+        'Quien dirige': 'quienDirige',
+        'Registre cualquier comentario para comprender lo sucedido en esta instantánea': 'comentario',
+        'Número de instantánea': 'numInstantanea'
+    }
     
+    # Aplicar el renombramiento solo a las columnas que existen
+    df_inst = df_inst.rename(columns={k: v for k, v in rename_dict.items() if k in df_inst.columns})
     if df_inst.empty:
         st.warning("No hay datos disponibles para las métricas instantáneas.")
         return
