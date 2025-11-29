@@ -26,11 +26,7 @@ header("#282255")
 
 
 CONSOLIDADO_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6Ql44xab2MHwi7PcPIa9nvMERf6oUTWktc5W6RG5KvhEP9SPPb_a638vdDPoWkTg_x8ovxt_RP9Xl/pub?output=csv"
-DIMENSION_3_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR6IHP3JOTvjZN0F-IOqMcQmj0ru8mYTWupl8-5ems4Y__P8LDsR-lmSmNnkug6hfzpJQb4sIF1rBBb/pub?gid=933820752&single=true&output=csv"
-DIMENSION_6_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRcAJH8Nyp_PeUeW45LCb9pyTT5QFyT08FF4_tphvI3kyCOfNkHneA2jhH13Z4dzeopeMOlEW0yXrLE/pub?gid=613670756&single=true&output=csv"
-DIMENSION_7_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRo8cTNJA8pC7Z-lEXqL2PVQBiV0MlObiWxqmNhxuwjCMuXCRUwjmrftFOgSrFERfbGPHOZuG6nNCnm/pub?gid=843612387&single=true&output=csv"
-DIMENSION_8_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSLI9QHXP_uMB1dX-Xy1QEWaiQJURkffEfvbNeJxC0cQ8JZlhfAsJY1xM5yklRxuCvtoH6kXrTv6lXZ/pub?output=csv"
-
+DIMENSION_3_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQDS5KB6oesIgGpY7swU6CkWRwe36WYtjkZLI89GtlnZtE83DRjU7ZMOlJOvEaRu6e_1ce1FuSivOb5/pub?output=csv"
 
 # --- Cargar Datos con Cache ---
 @st.cache_data(ttl=600)
@@ -43,9 +39,6 @@ def load_data(file):
 df = load_data(CONSOLIDADO_URL)
 
 dimension_3_df = load_data(DIMENSION_3_URL)
-dimension_6_df = load_data(DIMENSION_6_URL)
-dimension_7_df = load_data(DIMENSION_7_URL)
-dimension_8_df = load_data(DIMENSION_8_URL)
 
 dimensiones = {
     "Dimensión 3": {
@@ -66,60 +59,7 @@ dimensiones = {
             "nivel_redes_inter": "Redes Inter",
             "codigo_ie": "Código IE",
         },
-    },
-    "Dimensión 6": {
-        "data": dimension_6_df,
-        "clean_names": {
-            "nivel_practicas_frecuencia": "Frecuencia Prácticas Docentes",
-            "nivel_importancia_pc": "Importancia PC Directivos",
-            "nivel_act_pc_participa": "Participa en actividades PC",
-            "nivel_edterciaria_proporcion": "Acciones Institucionales",
-            "nivel_pc_alfabetizacion": "PC Alfabetización",
-            "nivel_practicas_proporcion": "Proporción Prácticas Docentes",
-            "nivel_capacidad_decidir": "Capacidad de Decidir",
-            "nivel_alianzas": "Alianzas externas",
-            "nivel_conexion_areas_proporcion": "Conexión con otras áreas",
-            "nivel_equipos_proporcion": "Equipos y software",
-            "nivel_recursos_suficientes_num": "Recursos Suficientes",
-            "codigo_ie": "Código IE",
-        },
-    },
-    "Dimensión 7": {
-        "data": dimension_7_df,
-        "clean_names": {
-            "nivel_act_pc_participa": "Participa en actividades PC",
-            "nivel_reconoce_valor": "Reconoce Valor PC",
-            "nivel_puntaje_PC_estudiante": "Puntaje PC Estudiante",
-            "nivel_conceptos_habilidades": "Autoeficacia: Conceptos y Habilidades",
-            "nivel_problemas_comp": "Autoeficacia: Problemas Computacionales",
-            "nivel_capacidad_decidir": "Capacidad de Decidir",
-            "nivel_sentir": "Afecto clases PC",
-            "nivel_hacer": "Participación clases PC",
-            "nivel_dif_genero": "Diferencias por Género",
-            "nivel_dif_discapacidad": "Diferencias Discapacidad",
-            "nivel_no_identifica": "No Identifican Brechas",
-            "nivel_analizan_brechas_con_datos": "Analizan Brechas con Datos",
-            "codigo_ie": "Código IE",
-        },
-    },
-    "Dimensión 8": {
-        "data": dimension_8_df,
-        "clean_names": {
-            "nivel_practicas_frecuencia": "Frecuencia Prácticas",
-            "nivel_acciones_proporcion": "Proporción Acciones",
-            "nivel_analizan_brechas_con_datos": "Analizan Brechas con Datos",
-            "nivel_practicas_proporcion": "Proporción Prácticas",
-            "nivel_disposicion": "Disposición",
-            "nivel_mentoria_yo": "Mentoría: autopercepción",
-            "nivel_mentoria_otros": "Mentoría: acciones frente a otros",
-            "nivel_espacios_reflexion": "Espacios Reflexión",
-            "nivel_no_identifica": "No Identifican Brechas",
-            "nivel_nunca_analizan": "Nunca Analizan",
-            "nivel_frecuencia_puntual": "Frecuencia Puntual",
-            "nivel_frecuencia_periodica": "Frecuencia Periódica",
-            "codigo_ie": "Código IE",
-        },
-    },
+    }
 }
 
 
@@ -161,27 +101,14 @@ with tab1:
         )
 
 with tab2:
-    ug = st.multiselect(
-        "Seleccione la Unidad de Gestión para analizar",
-        options=["UG" + str(i) for i in range(1, 21)],
-        key="_ug_selectbox",
-        default=None,
-    )
 
     dimension_priorizada = st.toggle("Prioriza la dimensión")
 
     for dimension, info in dimensiones.items():
         dim_df = info["data"]
-        if "ug_base" not in dim_df.columns:
-            dim_df["ug_base"] = random.choices(
-                ["UG" + str(i) for i in range(1, 21)], k=len(dim_df)
-            )
-        # TODO: Replace with actual UG data when available
-        # Random value between UG1 and UG20
+        
         clean_names = info["clean_names"]
 
-        if ug:
-            dim_df = dim_df[dim_df["ug_base"].isin(ug)]
 
         if dimension_priorizada:
             dim_df = dim_df[dim_df["dim_priorizada"] == "Sí"]
