@@ -1503,7 +1503,8 @@ def instantaneas():
         '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - Docentes acompañados': 'participaDocentes',
         '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - Mentores': 'participaMentores',
         '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - No aplica': 'participaNA',
-        '¿Quiénes participan activamente en la conversación o actividad en este momento? Si no está ocurriendo una conversación o actividad en este momento, selecciona "No aplica"': 'participantes',
+        '¿Quiénes participan activamente en la conversación o actividad en este momento? Si no está ocurriendo una conversación o actividad en este momento, selecciona "No aplica" - antiguo': 'participantesAntiguo',
+        '¿Quiénes participan activamente en la conversación o actividad en este momento? Si no está ocurriendo una conversación o actividad en este momento, selecciona "No aplica" -': 'participantes',
         'Quien dirige': 'quienDirige',
         'Registre cualquier comentario para comprender lo sucedido en esta instantánea': 'comentario',
         'Número de instantánea': 'numInstantanea'
@@ -1511,6 +1512,13 @@ def instantaneas():
     
     # Aplicar el renombramiento solo a las columnas que existen
     df_inst = df_inst.rename(columns={k: v for k, v in rename_dict.items() if k in df_inst.columns})
+    
+    # Crear columna 'participantes' fusionando las dos columnas posibles
+    if 'participantes' not in df_inst.columns and 'participantesAntiguo' in df_inst.columns:
+        df_inst['participantes'] = df_inst['participantesAntiguo']
+    elif 'participantes' in df_inst.columns and 'participantesAntiguo' in df_inst.columns:
+        # Si ambas existen, usar la que tenga datos, priorizando la nueva
+        df_inst['participantes'] = df_inst['participantes'].fillna(df_inst['participantesAntiguo'])
     if df_inst.empty:
         st.warning("No hay datos disponibles para las métricas instantáneas.")
         return
@@ -1796,6 +1804,13 @@ def instantaneas():
         ].copy()
 
         if not df_quien_dirige.empty:
+                # Reemplazar texto de "par experto" por "Coding Hubs Master"
+                df_quien_dirige['quienDirige'] = df_quien_dirige['quienDirige'].str.replace(
+                    'Sí, un(a) par experto(a)', 
+                    'Sí, un(a) Coding Hubs Master', 
+                    regex=False
+                )
+                
                 # Crear conteo agrupado por instantánea y tipo de quienDirige (sin separar por encuentro)
                 direccion_por_instantanea = df_quien_dirige.groupby(['numInstantanea', 'quienDirige']).size().reset_index(name='Cantidad_Observaciones')
 
@@ -1928,7 +1943,7 @@ def instantaneas():
             
             # Renombrar los tipos de participación para mejor presentación
             nombres_participacion = {
-                'participaPares': 'Pares Expertos',
+                'participaPares': 'Coding Hubs Masters',
                 'participaDocentes': 'Docentes Acompañados',
                 'participaMentores': 'Mentores',
                 'participaNA': 'No Aplica'
