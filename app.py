@@ -50,6 +50,14 @@ def main():
                 url_path="/marco_2025"
             )
         ],
+        "Análisis de Pares": [
+            st.Page(
+                page="app_pages/pares_analisis.py",
+                title="Análisis de Pares",
+                icon="📝",
+                url_path="/pares_analisis"
+            )
+        ],
     }
 
     app = st.navigation(pages)
