@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.17.0"
+__generated_with = "0.18.1"
 app = marimo.App(width="full")
 
 
@@ -510,7 +510,7 @@ def _(final_df):
 
 @app.cell
 def _(final_df):
-    final_df.to_csv("../data/limpieza/implementacion_limpio_coding_hub.csv", index=False)
+    final_df.to_csv("../data/implementacion_limpio_coding_hub.csv", index=False)
     return
 
 
