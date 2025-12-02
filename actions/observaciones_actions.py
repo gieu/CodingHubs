@@ -58,10 +58,10 @@ def instantaneas(instantaneas):
         )
 
         if momento == "Pre":
-            col1.plotly_chart(fig)
+            col1.plotly_chart(fig, config=chart_config)
 
         if momento == "Post":
-            col2.plotly_chart(fig)
+            col2.plotly_chart(fig, config=chart_config)
 
     df_heat = instantaneas.copy()
     df_heat = df_heat[df_heat["Número de instantánea"] <= 10]
@@ -138,7 +138,7 @@ def instantaneas(instantaneas):
 
         fig.update_yaxes(autorange="reversed")
 
-        st.plotly_chart(fig)
+        st.plotly_chart(fig, config=chart_config)
 
 
 def observaciones_generales(obs_generales):
@@ -396,7 +396,7 @@ def observaciones_generales(obs_generales):
 
     grado_guia["grado"] = grado_guia["grado"].str.extract(r"(\d+)").astype(float)
 
-    fig = px.scatter(
+    fig = px.box(
         grado_guia,
         x="grado",
         y="grado_guia",
@@ -410,6 +410,7 @@ def observaciones_generales(obs_generales):
         category_orders={"momento": ["Pretest", "Postest"]},
     )
     fig.update_layout(legend_title_text="Momento")
+    fig.update_xaxes(tickmode="linear", dtick=1)
 
     st.plotly_chart(fig, config=chart_config)
 
@@ -473,7 +474,7 @@ def observaciones_generales(obs_generales):
         fig.update_yaxes(range=[0, 100])
         fig.update_traces(textposition="outside")
         st.plotly_chart(fig, config=chart_config)
-
+        
 
 def observaciones_ti(obs_generales):
     df = obs_generales.copy()
@@ -746,10 +747,17 @@ def observaciones_ti(obs_generales):
         categories=["Pretest", "Postest"],
         ordered=True,
     )
+    df_primm['grupo_espanol'] = df_primm['grupo'].replace({
+        'P': 'P (Predecir)',
+        'R': 'R (Ejecutar)',
+        'I': 'I (Investigar)',
+        'M': 'M (Modificar)',
+        'M ': 'M (Hacer)'
+    })
 
     fig_general = px.bar(
         df_primm,
-        x="grupo",
+        x="grupo_espanol",
         y="porcentaje",
         color="momento",
         barmode="group",  # barras lado a lado por momento
@@ -758,6 +766,7 @@ def observaciones_ti(obs_generales):
         labels={
             "porcentaje": "Porcentaje (%)",
             "grupo": "Grupo PRIMM",
+            "grupo_espanol": "Grupo PRIMM",
             "momento": "Momento",
         },
         range_y=[0, 100],
@@ -765,12 +774,12 @@ def observaciones_ti(obs_generales):
         category_orders={"momento": ["Pretest", "Postest"]},
 
     )
-    Order = ["P", "R", "I", "M", "M "]
+    Order = ["P (Predecir)", "R (Ejecutar)", "I (Investigar)", "M (Modificar)", "M (Hacer)"]
     fig_general.update_xaxes(categoryorder="array", categoryarray=Order)
     fig_general.update_traces(textposition="outside")
 
     st.plotly_chart(fig_general, config=chart_config)
-
+    
     # Distribución por práctica dentro de cada grupo PRIMM
     st.markdown("### Distribución por práctica dentro de cada grupo PRIMM")
     for group in ["R", "I", "M", "M "]:
