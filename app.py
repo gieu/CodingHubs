@@ -66,6 +66,14 @@ def main():
                 url_path="/pares2024_2025"
             )
         ],
+        "Estudiantes 2024-2025": [
+            st.Page(
+                page="app_pages/estudiantes2024_2025.py",
+                title="Estudiantes 2024-2025",
+                icon="🎓",
+                url_path="/estudiantes2024_2025"
+            )
+        ],
     }
 
     app = st.navigation(pages)
