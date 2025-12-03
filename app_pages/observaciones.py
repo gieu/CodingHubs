@@ -40,7 +40,7 @@ df_ti_generales = load_data(CSV_URL_3)
 df_stem_generales = load_data(CSV_URL_4)
 
 
-tab1, tab2 = st.tabs(["Clases STEM", "Clases TI"])
+tab1, tab2, tab3 = st.tabs(["Clases STEM", "Clases TI", "Todas las clases"])
 
 with tab1:
     st.header("Observaciones STEM")
@@ -53,16 +53,15 @@ with tab1:
     observaciones_generales(df_stem_generales)
 
     with st.expander("Ver datos generales"):
-        # Drop columns between "mentor" and "idioma"
+        #Drop columns between "tipo_respuesta" and "idioma"
         cols_to_drop = df_stem_generales.columns[
-            df_stem_generales.columns.get_loc("colegio")
-            + 1 : df_stem_generales.columns.get_loc("asignatura")
+            df_stem_generales.columns.get_loc("tipo_respuesta")
+            + 1 : df_stem_generales.columns.get_loc("idioma")
         ].to_list() + ["nombre_docente"]
         df_stem_generales = df_stem_generales.drop(columns=cols_to_drop)
         st.dataframe(df_stem_generales)
 
-   
-   # observaciones_stem(df_stem_generales)
+    #observaciones_stem(df_stem_generales)
 
 with tab2:
     st.header("Observaciones TI")
@@ -75,10 +74,33 @@ with tab2:
     observaciones_generales(df_ti_generales)
 
     with st.expander("Ver datos generales"):
+        # Drop columns between "unidad" and "idioma"
+        # cols_to_drop = df_ti_generales.columns[
+        #     df_ti_generales.columns.get_loc("unidad")
+        #     + 1 : df_ti_generales.columns.get_loc("idioma")
+        # ].to_list() + ["nombre_docente"]
         df_ti_generales = df_ti_generales.drop(columns=cols_to_drop)
         st.dataframe(df_ti_generales)
 
     observaciones_ti(df_ti_generales)
+
+with tab3:
+    st.header("Observaciones Todas las Clases")
+    combined_instantaneas = pd.concat(
+        [df_stem_instantaneas, df_ti_instantaneas], ignore_index=True
+    )
+    instantaneas(combined_instantaneas)
+
+    with st.expander("Ver datos de instantáneas"):
+        st.dataframe(combined_instantaneas)
+
+    combined_generales = pd.concat(
+        [df_stem_generales, df_ti_generales], ignore_index=True
+    )
+    observaciones_generales(combined_generales)
+
+    with st.expander("Ver datos generales"):
+        st.dataframe(combined_generales)
 
 
 st.markdown("---")
