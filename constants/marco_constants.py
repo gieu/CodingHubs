@@ -19,3 +19,17 @@ COLORS = {
     'pretest': {'line': 'rgb(239, 85, 59)', 'fill': 'rgba(239, 85, 59, 0.5)'},
     'posttest': {'line': 'rgb(99, 110, 250)', 'fill': 'rgba(99, 110, 250, 0.5)'}
 }
+
+# Mapeo de nombres completos a nombres cortos
+CODIGO_IE_NOMBRES = {
+    'Institución Educativa Escuela Normal Superior de Caldas': 'IEM01',
+    'Institución Educativa Gran Colombia': 'IEM02',
+    'Institución Educativa Instituto Chipre': 'IEM03',
+    'Institución Educativa Instituto Latinoamericano': 'IEM04',
+    'Institución Educativa Instituto Manizales': 'IEM05',
+    'Institución Educativa Instituto Técnico Francisco José de Caldas': 'IEM06',
+    'Institución Educativa Instituto Técnico Marco Fidel Suarez': 'IEM07',
+    'Institución Educativa Liceo León de Greiff': 'IEM08',
+    'Institución Educativa Mariscal Sucre': 'IEM09',
+    'Institución Educativa San Sebastián': 'IEM10'
+}

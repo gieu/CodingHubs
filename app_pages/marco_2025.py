@@ -15,7 +15,7 @@ from actions.marco_actions import (
 )
 from constants.footer_constants import FOOTER_HTML, IMAGENES_BASE64
 from constants.header_constants import header
-from constants.marco_constants import TEXTO, TITULO
+from constants.marco_constants import TEXTO, TITULO, CODIGO_IE_NOMBRES
 from utils.chart_config import get_chart_config
 
 chart_config = get_chart_config()
@@ -172,7 +172,7 @@ with tab2:
             fig = grafica_estado(dim_df, clean_names)
             st.plotly_chart(fig, config=get_chart_config(), key=random.random())
 
-            fig = heatmap(dim_df, clean_names, list(clean_names.keys()))
+            fig = heatmap(dim_df, clean_names, list(clean_names.keys()), CODIGO_IE_NOMBRES)
             st.plotly_chart(fig, config=get_chart_config(), key=random.random())
 
 

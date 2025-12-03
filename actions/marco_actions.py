@@ -105,7 +105,7 @@ def crear_grafico_radar(pretest_numeric, posttest_numeric, categorias, codigo):
     return fig
 
 
-def heatmap(df, clean_column_names: dict = None, value_cols: list = None):
+def heatmap(df, clean_column_names: dict = None, value_cols: list = None, codigo_ie_nombres: dict = None):
     """Genera un heatmap de las dimensiones evaluadas.
     con px.imshow de plotly.express."""
     df = df.copy()
@@ -139,6 +139,10 @@ def heatmap(df, clean_column_names: dict = None, value_cols: list = None):
 
     # Sort columns (codigo_ie) alphabetically
     matrix = matrix[sorted(matrix.columns)]
+    
+    # Replace codigo_ie with short names if provided
+    if codigo_ie_nombres:
+        matrix.columns = [codigo_ie_nombres.get(col, col) for col in matrix.columns]
 
     if clean_column_names:
         matrix.index = [clean_column_names.get(col, col) for col in matrix.index]
@@ -182,11 +186,14 @@ def heatmap(df, clean_column_names: dict = None, value_cols: list = None):
         ygap=0.5,
     )
     # Update color on hover to use categorical values
+    hover_matrix = df_long.pivot(
+        index="variable", columns="codigo_ie", values="valor"
+    )
+    hover_matrix = hover_matrix[sorted(hover_matrix.columns)]
+    
     fig.update_traces(
-        hovertemplate="Código IE: %{x}<br>Escala: %{y}<br>Valor: %{customdata} <br><extra></extra>",
-        customdata=df_long.pivot(
-            index="variable", columns="codigo_ie", values="valor"
-        ).values,
+        hovertemplate="Institución: %{x}<br>Escala: %{y}<br>Valor: %{customdata} <br><extra></extra>",
+        customdata=hover_matrix.values,
     )
 
     fig.update_layout(
@@ -194,7 +201,7 @@ def heatmap(df, clean_column_names: dict = None, value_cols: list = None):
         height=500,
         # margin=dict(l=280, r=40, t=80, b=10),
         title="Mapa de calor de escalas",
-        xaxis_title="Código IE",
+        xaxis_title="Institución Educativa",
         yaxis_title="Variable",
     )
 
