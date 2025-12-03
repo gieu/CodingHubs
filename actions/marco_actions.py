@@ -37,29 +37,49 @@ def obtener_datos_pretest_posttest(datos_codigo):
     Obtiene los datos de Pretest y Posttest de un código de IE.
     """
     if (
-        "Pretest" in datos_codigo["Momento"].values
-        and "Posttest" in datos_codigo["Momento"].values
+        "pre_2024" in datos_codigo["Momento"].values
+        and "post_2024" in datos_codigo["Momento"].values
+        and "post_2025" in datos_codigo["Momento"].values
     ):
-        pretest = datos_codigo[datos_codigo["Momento"] == "Pretest"].iloc[0, 2:]
-        posttest = datos_codigo[datos_codigo["Momento"] == "Posttest"].iloc[0, 2:]
+        pretest = datos_codigo[datos_codigo["Momento"] == "pre_2024"].iloc[0, 2:]
+        posttest = datos_codigo[datos_codigo["Momento"] == "post_2024"].iloc[0, 2:]
+        posttest_2025 = datos_codigo[datos_codigo["Momento"] == "post_2025"].iloc[0, 2:]
+        
+        if "nivel_2025" in datos_codigo["Momento"].values:
+            nivel_2025 = datos_codigo[datos_codigo["Momento"] == "nivel_2025"].iloc[0, 2:]
+            nivel_2025_numeric = nivel_2025.map(MAPPING)
+            nivel_2025_numeric = pd.concat(
+                [nivel_2025_numeric, pd.Series([nivel_2025_numeric.iloc[0]])], ignore_index=True
+            )
+        else:
+            nivel_2025_numeric = None
+        
 
         pretest_numeric = pretest.map(MAPPING)
         posttest_numeric = posttest.map(MAPPING)
+        posttest_2025_numeric = posttest_2025.map(MAPPING)
+        
         pretest_numeric = pd.concat(
             [pretest_numeric, pd.Series([pretest_numeric.iloc[0]])], ignore_index=True
         )
         posttest_numeric = pd.concat(
             [posttest_numeric, pd.Series([posttest_numeric.iloc[0]])], ignore_index=True
         )
+        posttest_2025_numeric = pd.concat(
+            [posttest_2025_numeric, pd.Series([posttest_2025_numeric.iloc[0]])], ignore_index=True
+        )
+        
+    
         categorias = list(pretest.index)
-        return pretest_numeric, posttest_numeric, categorias
-    return None, None, None
+        return pretest_numeric, posttest_numeric, posttest_2025_numeric,nivel_2025_numeric, categorias
+    return None, None, None, None, None
 
 
-def crear_grafico_radar(pretest_numeric, posttest_numeric, categorias, codigo):
+def crear_grafico_radar(pretest_numeric, posttest_numeric, posttest_2025_numeric,  categorias, codigo,nivel_2025_numeric=None):
     """
     Crea un gráfico de radar comparando los datos de Pretest y Posttest.
     """
+    
 
     fig = go.Figure()
 
@@ -68,9 +88,9 @@ def crear_grafico_radar(pretest_numeric, posttest_numeric, categorias, codigo):
             r=pretest_numeric.values,
             theta=categorias + [categorias[0]],  # Cerrar el gráfico
             fill="toself",
-            name="Pretest",
-            line_color=COLORS["pretest"]["line"],
-            fillcolor=COLORS["pretest"]["fill"],
+            name="Pre_2024",
+            line_color=COLORS["pre_2024"]["line"],
+            fillcolor=COLORS["pre_2024"]["fill"],
         )
     )
 
@@ -79,11 +99,33 @@ def crear_grafico_radar(pretest_numeric, posttest_numeric, categorias, codigo):
             r=posttest_numeric.values,
             theta=categorias + [categorias[0]],  # Cerrar el gráfico
             fill="toself",
-            name="Posttest",
-            line_color=COLORS["posttest"]["line"],
-            fillcolor=COLORS["posttest"]["fill"],
+            name="Post_2024",
+            line_color=COLORS["post_2024"]["line"],
+            fillcolor=COLORS["post_2024"]["fill"],
         )
     )
+
+    fig.add_trace(
+        go.Scatterpolar(
+            r=posttest_2025_numeric.values,
+            theta=categorias + [categorias[0]],  # Cerrar el gráfico
+            fill="toself",
+            name="Post_2025",
+            line_color=COLORS["post_2025"]["line"],
+            fillcolor=COLORS["post_2025"]["fill"],
+        )
+    )
+    if nivel_2025_numeric is not None:
+        fig.add_trace(
+            go.Scatterpolar(
+                r=nivel_2025_numeric.values,
+                theta=categorias + [categorias[0]],  # Cerrar el gráfico
+                fill="toself",
+                name="Nivel_2025",
+                line_color=COLORS["nivel_2025"]["line"],
+                fillcolor=COLORS["nivel_2025"]["fill"],
+            )
+        )
 
     fig.update_layout(
         polar=dict(
@@ -94,12 +136,15 @@ def crear_grafico_radar(pretest_numeric, posttest_numeric, categorias, codigo):
                 ticktext=list(MAPPING.keys()),
                 tick0=0,
                 dtick=1,
-            )
+            ),
+            angularaxis=dict(
+                rotation=90,
+                direction="clockwise",
+            ),
         ),
         showlegend=True,
         title=f"Comparación Pretest y Posttest para {codigo}",
-        height=700,
-        width=900,
+        height=600
     )
 
     return fig
