@@ -6,7 +6,7 @@ Cada institución recibe una calificación en una escala de 1A a 5 para cada una
 
 
 # URL del CSV publicado de Google Sheets
-CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6Ql44xab2MHwi7PcPIa9nvMERf6oUTWktc5W6RG5KvhEP9SPPb_a638vdDPoWkTg_x8ovxt_RP9Xl/pub?output=csv"
+CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRVc2rbCoOeSvbw99wbWhECryfq3cvS5YA8HHhnYGKCtLHNGleoGM6wPqde8Qtfg/pub?gid=618340973&single=true&output=csv"
 
 # Opciones iniciales
 OPCIONES_INICIALES = ['Promedio', 'Moda', 'Mediana']
@@ -16,8 +16,10 @@ MAPPING = {'0': 0, '1A': 1, '1B': 2, '2A': 3, '2B': 4, '3A': 5, '3B': 6, '4': 7,
 
 # Colores para los gráficos
 COLORS = {
-    'pretest': {'line': 'rgb(239, 85, 59)', 'fill': 'rgba(239, 85, 59, 0.5)'},
-    'posttest': {'line': 'rgb(99, 110, 250)', 'fill': 'rgba(99, 110, 250, 0.5)'}
+    'pre_2024': {'line': 'rgb(102, 36, 130)', 'fill': 'rgba(102, 36, 130, 0.3)'},
+    'post_2024': {'line': 'rgb(35, 8, 90)', 'fill': 'rgba(35, 8, 90, 0.3)'},
+    'post_2025': {'line': 'rgb(229, 0, 126)', 'fill': 'rgba(229, 0, 126, 0.3)'},
+    'nivel_2025': {'line': 'rgb(233, 161, 69)', 'fill': 'rgba(233, 161, 69, 0.3)'},
 }
 
 # Mapeo de nombres completos a nombres cortos
