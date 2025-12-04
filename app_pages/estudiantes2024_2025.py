@@ -50,6 +50,13 @@ try:
             'Undecimo': 'Undécimo'
         })
     
+    if 'grado' in df.columns and 'nivel' in df.columns:
+        grados_primaria = ['Tercero', 'Cuarto', 'Quinto']
+        grados_secundaria = ['Sexto', 'Séptimo', 'Octavo', 'Noveno', 'Décimo', 'Undécimo']
+        
+        df.loc[df['grado'].isin(grados_primaria), 'nivel'] = 'Primaria'
+        df.loc[df['grado'].isin(grados_secundaria), 'nivel'] = 'Secundaria'
+    
     # Filtros
     st.header("🔍 Filtros")
     
@@ -455,6 +462,190 @@ try:
                     boxgroupgap=0.1
                 )
                 st.plotly_chart(fig, use_container_width=True, config=config)
+    
+    
+    
+    st.markdown("---")
+    
+    # Función para crear box plots comparativos por nivel
+    def crear_boxplots_por_nivel(df_data, variable, config):
+        """
+        Crea box plots separados por nivel (Primaria y Secundaria) para una variable específica.
+        
+        Args:
+            df_data: DataFrame con los datos
+            variable: String de la variable a analizar ('puntaje_PC', 'conceptos_habilidades', 'problemas_comp')
+            config: Configuración de gráficos de plotly
+        """
+        # Mapeo de nombres legibles
+        nombres_variables = {
+            'puntaje_PC': 'Puntaje PC',
+            'conceptos_habilidades': 'Conceptos y Habilidades',
+            'problemas_comp': 'Problemas Computacionales'
+        }
+        
+        if 'grado' not in df_data.columns or variable not in df_data.columns or 'nivel' not in df_data.columns:
+            st.info("No hay datos disponibles para crear la comparación")
+            return
+        
+        # Orden de grados
+        orden_grados_primaria = ['Tercero', 'Cuarto', 'Quinto']
+        orden_grados_secundaria = ['Sexto', 'Séptimo', 'Octavo', 'Noveno', 'Décimo', 'Undécimo']
+        
+        # Colores y nombres
+        momentos_config = [
+            {'momento': 'pre_2024', 'nombre': 'Pre 2024', 'color': '#FF6B6B'},
+            {'momento': 'post_2024', 'nombre': 'Post 2024', 'color': '#4ECDC4'},
+            {'momento': 'post_2025', 'nombre': 'Post 2025', 'color': '#A8E6CF'}
+        ]
+        
+        # Primaria (arriba)
+        st.subheader("📚 Primaria")
+        
+        # Filtrar datos de primaria
+        df_primaria = df_data[df_data['nivel'] == 'Primaria']
+        
+        if not df_primaria.empty:
+            fig_primaria = go.Figure()
+            
+            # Agregar un box plot por cada momento
+            for config_momento in momentos_config:
+                df_momento = df_primaria[df_primaria['momento'] == config_momento['momento']]
+                
+                if not df_momento.empty:
+                    fig_primaria.add_trace(go.Box(
+                        x=df_momento['grado'],
+                        y=df_momento[variable],
+                        name=config_momento['nombre'],
+                        marker_color=config_momento['color'],
+                        boxmean=False,
+                        boxpoints='outliers'
+                    ))
+            
+            fig_primaria.update_layout(
+                boxmode='group',
+                title=dict(
+                    text='Primaria',
+                    font=dict(size=14, color='#2c3e50', family='Arial, sans-serif'),
+                    x=0.5,
+                    xanchor='center'
+                ),
+                height=450,
+                xaxis_title="Grado",
+                yaxis_title=nombres_variables.get(variable, variable),
+                font=dict(size=12, color='#2c3e50'),
+                plot_bgcolor='white',
+                paper_bgcolor='#f8f9fa',
+                margin=dict(t=60, b=40, l=60, r=20),
+                xaxis=dict(
+                    categoryorder='array',
+                    categoryarray=orden_grados_primaria,
+                    showgrid=False,
+                    tickfont=dict(size=11, color='#5a6c7d'),
+                    linecolor='#dee2e6',
+                    linewidth=1
+                ),
+                yaxis=dict(
+                    showgrid=True,
+                    gridwidth=1,
+                    gridcolor='#e9ecef',
+                    tickfont=dict(size=11, color='#5a6c7d'),
+                    linecolor='#dee2e6',
+                    linewidth=1
+                ),
+                legend=dict(
+                    title=dict(text='Momento', font=dict(size=12, color='#2c3e50')),
+                    font=dict(size=11, color='#5a6c7d'),
+                    bgcolor='rgba(255, 255, 255, 0.8)',
+                    bordercolor='#dee2e6',
+                    borderwidth=1
+                ),
+                boxgap=0.2,
+                boxgroupgap=0.15
+            )
+            
+            st.plotly_chart(fig_primaria, use_container_width=True, config=config)
+        else:
+            st.info("No hay datos disponibles para Primaria")
+        
+        # Secundaria (abajo)
+        st.subheader("🎓 Secundaria")
+        
+        # Filtrar datos de secundaria
+        df_secundaria = df_data[df_data['nivel'] == 'Secundaria']
+        
+        if not df_secundaria.empty:
+            fig_secundaria = go.Figure()
+            
+            # Agregar un box plot por cada momento
+            for config_momento in momentos_config:
+                df_momento = df_secundaria[df_secundaria['momento'] == config_momento['momento']]
+                
+                if not df_momento.empty:
+                    fig_secundaria.add_trace(go.Box(
+                        x=df_momento['grado'],
+                        y=df_momento[variable],
+                        name=config_momento['nombre'],
+                        marker_color=config_momento['color'],
+                        boxmean=False,
+                        boxpoints='outliers'
+                    ))
+            
+            fig_secundaria.update_layout(
+                boxmode='group',
+                title=dict(
+                    text='Secundaria',
+                    font=dict(size=14, color='#2c3e50', family='Arial, sans-serif'),
+                    x=0.5,
+                    xanchor='center'
+                ),
+                height=450,
+                xaxis_title="Grado",
+                yaxis_title=nombres_variables.get(variable, variable),
+                font=dict(size=12, color='#2c3e50'),
+                plot_bgcolor='white',
+                paper_bgcolor='#f8f9fa',
+                margin=dict(t=60, b=40, l=60, r=20),
+                xaxis=dict(
+                    categoryorder='array',
+                    categoryarray=orden_grados_secundaria,
+                    showgrid=False,
+                    tickfont=dict(size=11, color='#5a6c7d'),
+                    linecolor='#dee2e6',
+                    linewidth=1
+                ),
+                yaxis=dict(
+                    showgrid=True,
+                    gridwidth=1,
+                    gridcolor='#e9ecef',
+                    tickfont=dict(size=11, color='#5a6c7d'),
+                    linecolor='#dee2e6',
+                    linewidth=1
+                ),
+                legend=dict(
+                    title=dict(text='Momento', font=dict(size=12, color='#2c3e50')),
+                    font=dict(size=11, color='#5a6c7d'),
+                    bgcolor='rgba(255, 255, 255, 0.8)',
+                    bordercolor='#dee2e6',
+                    borderwidth=1
+                ),
+                boxgap=0.2,
+                boxgroupgap=0.15
+            )
+            
+            st.plotly_chart(fig_secundaria, use_container_width=True, config=config)
+        else:
+            st.info("No hay datos disponibles para Secundaria")
+    
+    # Box Plot unificado: Comparación por Grado y Nivel - Todos los Momentos
+    st.header("📊 Comparación de Puntaje PC por Grado - Todos los Momentos")
+    crear_boxplots_por_nivel(df, 'puntaje_PC', config)
+    
+    st.header("📊 Comparación de Conceptos y Habilidades por Grado - Todos los Momentos")
+    crear_boxplots_por_nivel(df, 'conceptos_habilidades', config)
+    
+    st.header("📊 Comparación de Problemas Computacionales por Grado - Todos los Momentos")
+    crear_boxplots_por_nivel(df, 'problemas_comp', config)
     
     st.markdown("---")
     
