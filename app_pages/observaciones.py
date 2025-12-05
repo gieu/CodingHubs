@@ -20,9 +20,9 @@ header("#282255")
 
 
 CSV_URL_1 = "https://drive.google.com/uc?export=download&id=1xZe66O9hCFpzYUhfKO88fyYNoWfX4qL-"
-CSV_URL_2 = "https://drive.google.com/uc?export=download&id=1uWCQbdTG1MpryCDjRSFYKnvxn24C73vT"
+CSV_URL_2 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTU9IGnFp4vidgKKcvMj8dJfkTHQkDMvkswo1O7wvcTZb9dGT41iDaXAPBFBtVpr2oP-xeLh1IkYXM8/pub?gid=884233825&single=true&output=csv"
 CSV_URL_3 = "https://drive.google.com/uc?export=download&id=1YSvg7u38v7rzYL_JjIEao_ebBo5VeLKI"
-CSV_URL_4 = "https://drive.google.com/uc?export=download&id=12YM6-zcvUngMYY2yv1IRzMzP98-6btsU"
+CSV_URL_4 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbReSZM6d4dLqOk_N5_h-8xXcvW55-6OY2iRt9cT2jTvt3jokCo7Ja5sibEDlYZSKywrc9WgSxl5ad/pub?output=csv"
 
 
 # --- Cargar Datos con Cache ---

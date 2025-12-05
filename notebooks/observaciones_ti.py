@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.17.0"
+__generated_with = "0.18.1"
 app = marimo.App(width="medium")
 
 
@@ -672,6 +672,12 @@ def _(instantaneas_4, pd, px):
         _fig.update_traces(texttemplate='%{z:0.1f}%', hovertemplate='Acción: %{y}<br>Momento/Inst: %{x}<br>%{z:.1f}%<extra></extra>', textfont=dict(size=8))
         _fig.update_yaxes(autorange='reversed')
         _fig.show()
+    return
+
+
+@app.cell
+def _(obs_generales_3):
+    obs_generales_3['momento'].value_counts()
     return
 
 

@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.17.0"
+__generated_with = "0.18.1"
 app = marimo.App(width="medium")
 
 
@@ -14,13 +14,21 @@ def _():
 @app.cell
 def _(pd):
     base = pd.read_csv("../data/limpieza/observaciones_stem.csv", skiprows=[0, 2])
+    base['origen'] = 'pre'
     base2 = pd.read_csv("../data/limpieza/observaciones_stem_post.csv", skiprows=[0, 2])
+    base2['origen'] = 'post'
     return base, base2
 
 
 @app.cell
 def _(base2):
     base2
+    return
+
+
+@app.cell
+def _(base):
+    base
     return
 
 
@@ -32,7 +40,7 @@ def _(base2):
         "Seleccione la institución educativa y docente a observar - Nombre del/la docente observado": "Nombre del/la docente observado(a)",
         "Asignatura - Selected Choice": "Asignatura",
         "Número de documento de docente observado": "Número de documento de docente observado/a",
-    
+
     })
 
     base3.columns = [col.replace(" - Selected Choice", "") if "Tecnologías digitales" in col else col for col in base3.columns]
@@ -118,6 +126,15 @@ def _(df_3):
 @app.cell
 def _(df_4):
     df_4['Momento'].value_counts()
+    return
+
+
+@app.cell
+def _(df_4):
+    match_cc = df_4[df_4['Momento']=='Post']['Número de documento de docente observado/a'].unique().tolist()
+    df_4['match'] = 'No'
+    df_4.loc[df_4['Número de documento de docente observado/a'].isin(match_cc), 'match'] = 'Sí'
+    df_4['match'].value_counts()
     return
 
 
@@ -620,9 +637,31 @@ def _(instantaneas_4, pd, px):
 
 
 @app.cell
-def _(instantaneas_4, obs_generales_3):
-    obs_generales_3.to_csv('../data/limpieza/obs_generales_stem_limpio.csv', index=False)
-    instantaneas_4.to_csv('../data/limpieza/instantaneas_stem_limpio.csv', index=False)
+def _(obs_generales_3):
+    obs_generales_3['momento'].value_counts()
+    return
+
+
+@app.cell
+def _(df_4):
+    df_4.head()
+    return
+
+
+@app.cell
+def _(df_4, instantaneas_4, obs_generales_3):
+    obs_generales_4 = obs_generales_3.merge(df_4.loc[:,['ID de respuesta','match']], left_on='id_respuesta', right_on='ID de respuesta').drop(columns=['ID de respuesta'])
+    instantaneas_5 = instantaneas_4.merge(df_4.loc[:,['ID de respuesta','match']], left_on='id_respuesta', right_on='ID de respuesta').drop(columns=['ID de respuesta'])
+    return instantaneas_5, obs_generales_4
+
+
+@app.cell
+def _(instantaneas_5, obs_generales_4):
+    obs_generales_4.to_csv('../data/limpieza/obs_generales_stem_limpio.csv', index=False)
+    instantaneas_5.to_csv('../data/limpieza/instantaneas_stem_limpio.csv', index=False)
+
+    obs_generales_4.to_excel('../data/limpieza/obs_generales_stem_limpio.xlsx', index=False)
+    instantaneas_5.to_excel('../data/limpieza/instantaneas_stem_limpio.xlsx', index=False)
     return
 
 
