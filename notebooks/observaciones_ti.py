@@ -87,6 +87,15 @@ def _(df_4):
 
 
 @app.cell
+def _(df_4):
+    match_cc = df_4[df_4['Momento']=='Post']['Número de documento de docente observado/a'].unique().tolist()
+    df_4['match'] = 'No'
+    df_4.loc[df_4['Número de documento de docente observado/a'].isin(match_cc), 'match'] = 'Sí'
+    df_4['match'].value_counts()
+    return
+
+
+@app.cell
 def _(df_4, pd, re):
     def concatenate_columns(df, start_col, end_col, target_col):
         """
@@ -682,9 +691,19 @@ def _(obs_generales_3):
 
 
 @app.cell
-def _(instantaneas_4, obs_generales_3):
-    obs_generales_3.to_csv('../data/limpieza/obs_generales_ti_limpio.csv', index=False)
-    instantaneas_4.to_csv('../data/limpieza/instantaneas_ti_limpio.csv', index=False)
+def _():
+    return
+
+
+@app.cell
+def _(df_4, instantaneas_4, obs_generales_3):
+    obs_generales_4 = obs_generales_3.merge(df_4.loc[:,['ID de respuesta', 'match']], left_on='id_respuesta', right_on='ID de respuesta', how='left')
+    instantaneas_5 = instantaneas_4.merge(df_4.loc[:,['ID de respuesta', 'match']], left_on='id_respuesta', right_on='ID de respuesta', how='left')
+    obs_generales_4 = obs_generales_4.drop(columns=['ID de respuesta'])
+    instantaneas_5 = instantaneas_5.drop(columns=['ID de respuesta'])
+
+    obs_generales_4.to_csv('../data/limpieza/obs_generales_ti_limpio.csv', index=False)
+    instantaneas_5.to_csv('../data/limpieza/instantaneas_ti_limpio.csv', index=False)
     return
 
 
