@@ -105,7 +105,11 @@ def instantaneas(instantaneas):
 
     pivot_pre = pivot_pre.fillna(0)
     pivot_post = pivot_post.fillna(0)
-
+    
+    
+    orden_acciones = sorted(list(set(pivot_pre.index) | set(pivot_post.index)))
+    pivot_pre = pivot_pre.reindex(orden_acciones)
+    pivot_post = pivot_post.reindex(orden_acciones)
     for momento in ["Pre", "Post"]:
         if momento == "Pre":
             data = pivot_pre
@@ -129,6 +133,7 @@ def instantaneas(instantaneas):
             template="plotly_white",
             title_x=0.3,
             xaxis=dict(tickmode="linear", dtick=1),
+            
         )
 
         fig.update_traces(
@@ -137,7 +142,8 @@ def instantaneas(instantaneas):
             textfont=dict(size=12),
         )
 
-        fig.update_yaxes(autorange="reversed")
+        ## reorder y axis to match orden_acciones
+        fig.update_yaxes(categoryorder="array", categoryarray=orden_acciones)
 
         st.plotly_chart(fig, config=chart_config, key=random.random())
 
