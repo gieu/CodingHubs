@@ -43,6 +43,7 @@ NAVBAR_TEMPLATE = """
                 <a href="{BASE_URL}encuentros_colaborativos" target="_self">Encuentros Colaborativos</a>
                 <a href="{BASE_URL}observaciones" target="_self">Observaciones de Aula</a>
                 <a href="{BASE_URL}marco_2025" target="_self">Marco de Calidad 2025</a>
+                <a href="{BASE_URL}estudiantes_analisis" target="_self">Evaluación a Estudiantes</a>
                 <a href="{BASE_URL}pares_analisis" target="_self">Análisis de Masters</a>
                 <a href="{BASE_URL}pares2024_2025" target="_self">Masters 2024-2025</a>
                 <a href="{BASE_URL}estudiantes2024_2025" target="_self">Estudiantes 2024-2025</a>
