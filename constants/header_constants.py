@@ -48,6 +48,13 @@ NAVBAR_TEMPLATE = """
                 <a href="{BASE_URL}estudiantes2024_2025" target="_self">Estudiantes 2024-2025</a>
             </div>
         </div>
+        <div class="dropdown">
+            <a href="#" class="dropbtn">Biobots <span class="arrow-down">▼</span></a>
+            <div class="dropdown-content">
+                <a href="{BASE_URL}informe_biobots" target="_self">Informe Biobots</a>
+            </div>
+        </div>
+        </div>
     </div>
 </div>
 """
