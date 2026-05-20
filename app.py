@@ -74,6 +74,14 @@ def main():
                 url_path="/estudiantes2024_2025"
             )
         ],
+        "Seguimiento Rural": [
+            st.Page(
+                page="app_pages/seguimiento_rural.py",
+                title="Seguimiento Rural",
+                icon="📊",
+                url_path="/seguimiento_rural"
+            )
+        ],
     }
 
     app = st.navigation(pages)
