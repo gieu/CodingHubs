@@ -2,9 +2,14 @@ import pandas as pd
 import streamlit as st
 
 from actions.informe_biobots_actions import (
+    grafico_boxplot_puntaje_pc,
+    grafico_correlacion_pc_egma,
+    grafico_distribucion_aciertos_egma,
+    grafico_distribucion_aciertos_pc,
     grafico_distribucion_ciudad_edad,
     grafico_distribucion_ciudad_grado,
     grafico_estereotipos_genero,
+    grafico_histograma_puntaje_pc,
     grafico_mariposa_sexo,
     grafico_respuestas_items_pc,
     grafico_treemap_instituciones,
@@ -55,6 +60,21 @@ try:
 
     st.subheader("Respuestas por ítem de Pensamiento Computacional")
     grafico_respuestas_items_pc(df_consolidado, chart_config)
+
+    st.subheader("Puntaje de Pensamiento Computacional por ciudad y sexo")
+    grafico_boxplot_puntaje_pc(df_consolidado, chart_config)
+
+    st.subheader("Distribución del puntaje de Pensamiento Computacional")
+    grafico_histograma_puntaje_pc(df_consolidado, chart_config)
+
+    st.subheader("Distribución de aciertos en Pensamiento Computacional")
+    grafico_distribucion_aciertos_pc(df_consolidado, chart_config)
+
+    st.subheader("Distribución de aciertos EGMA")
+    grafico_distribucion_aciertos_egma(df_consolidado, chart_config)
+
+    st.subheader("Relación entre aciertos EGMA y puntaje de Pensamiento Computacional")
+    grafico_correlacion_pc_egma(df_consolidado, chart_config)
 
 except Exception as exc:
     st.error(f"No se pudieron cargar los datos: {exc}")
