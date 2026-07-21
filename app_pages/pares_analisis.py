@@ -1,5 +1,3 @@
-import os
-
 import pandas as pd
 import streamlit as st
 
@@ -7,17 +5,16 @@ from actions.pares_analisis import (
     bar_plots_categorical,
     bar_plots_numerical,
     box_plots,
-    migracion_graficas,
 )
 from constants.footer_constants import FOOTER_HTML, IMAGENES_BASE64
 from constants.header_constants import header
 from utils.chart_config import get_chart_config
 
-
 chart_config = get_chart_config()
 header("#282255")
 
 CSV_URL_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4vz317WN2UspAJU401x9OjLPjv1EAyW0zu3mxrOOrO67rmzFiqMH63zYU8bNuwkXZGMcSU5jzbVJG/pub?output=csv"
+
 
 # --- Cargar Datos con Cache ---
 @st.cache_data(ttl=600)
@@ -28,9 +25,7 @@ def load_data(file):
 
 
 df_evaluacion_pares = load_data(CSV_URL_1)
-tab1, tab2 = st.tabs(
-    ["Evaluación de Pares", "Característización de Pares"]
-)
+tab1, tab2 = st.tabs(["Evaluación de Pares", "Característización de Pares"])
 
 
 # st.dataframe(df_filtrado, use_container_width=True)
@@ -60,6 +55,7 @@ nombres_mostrar = {
     "nivelaciones_total_formacion": "Número de nivelaciones 2025",
     "num_usos_guia_bitacora": "Usos Guía Bitácora",
     "horas_2024_formacion": "Horas de formación 2024",
+    "categoria_docente_asistencia": "Categoría Par",
 }
 
 with tab1:
@@ -89,9 +85,7 @@ with tab1:
     # Preprocess things to group by (color, x axis)
 
     df_evaluacion_pares["sexo_asistencia"] = (
-        df_evaluacion_pares["sexo_asistencia"]
-        .fillna("No especifica")
-        .str.title()
+        df_evaluacion_pares["sexo_asistencia"].fillna("No especifica").str.title()
     )
     df_evaluacion_pares["razon_participacion"] = (
         df_evaluacion_pares["razon_participacion"]
@@ -135,6 +129,10 @@ with tab1:
         formacion_pc, axis=1
     )
 
+    df_evaluacion_pares["categoria_docente_asistencia"] = df_evaluacion_pares[
+        "categoria_docente_asistencia"
+    ].str.title()
+
     # Columnas filtrables
     columnas_filtrables = ["sexo_asistencia"]
 
@@ -164,6 +162,7 @@ with tab1:
             "razon_participacion",
             "asignatura_docente",
             "formacion_pc",
+            "categoria_docente_asistencia",
         ],
         format_func=lambda x: nombres_mostrar[x] if x else "Ninguno",
         index=0,
@@ -246,6 +245,7 @@ with tab2:
             "razon_participacion",
             "asignatura_docente",
             "formacion_pc",
+            "categoria_docente_asistencia",
         ],
         format_func=lambda x: nombres_mostrar[x] if x else "Ninguno",
         index=0,

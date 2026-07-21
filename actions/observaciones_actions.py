@@ -1,3 +1,4 @@
+import random
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -58,10 +59,10 @@ def instantaneas(instantaneas):
         )
 
         if momento == "Pre":
-            col1.plotly_chart(fig, config=chart_config)
+            col1.plotly_chart(fig, config=chart_config, key=random.random())
 
         if momento == "Post":
-            col2.plotly_chart(fig, config=chart_config)
+            col2.plotly_chart(fig, config=chart_config, key=random.random())
 
     df_heat = instantaneas.copy()
     df_heat = df_heat[df_heat["Número de instantánea"] <= 10]
@@ -104,7 +105,11 @@ def instantaneas(instantaneas):
 
     pivot_pre = pivot_pre.fillna(0)
     pivot_post = pivot_post.fillna(0)
-
+    
+    
+    orden_acciones = sorted(list(set(pivot_pre.index) | set(pivot_post.index)))
+    pivot_pre = pivot_pre.reindex(orden_acciones)
+    pivot_post = pivot_post.reindex(orden_acciones)
     for momento in ["Pre", "Post"]:
         if momento == "Pre":
             data = pivot_pre
@@ -128,6 +133,7 @@ def instantaneas(instantaneas):
             template="plotly_white",
             title_x=0.3,
             xaxis=dict(tickmode="linear", dtick=1),
+            
         )
 
         fig.update_traces(
@@ -136,9 +142,10 @@ def instantaneas(instantaneas):
             textfont=dict(size=12),
         )
 
-        fig.update_yaxes(autorange="reversed")
+        ## reorder y axis to match orden_acciones
+        fig.update_yaxes(categoryorder="array", categoryarray=orden_acciones)
 
-        st.plotly_chart(fig, config=chart_config)
+        st.plotly_chart(fig, config=chart_config, key=random.random())
 
 
 def observaciones_generales(obs_generales):
@@ -329,7 +336,7 @@ def observaciones_generales(obs_generales):
         ),
     )
 
-    st.plotly_chart(fig, config=chart_config)
+    st.plotly_chart(fig, config=chart_config, key=random.random())
 
     st.subheader("Uso de guías de aprendizaje")
 
@@ -377,7 +384,7 @@ def observaciones_generales(obs_generales):
 
     fig.update_yaxes(range=[0, 100])
     fig.update_traces(textposition="outside")
-    st.plotly_chart(fig, config=chart_config)
+    st.plotly_chart(fig, config=chart_config, key=random.random())
 
     # Dispersión de grado observado (grado) vs grado de guía (grado_guia) por momento
     st.subheader("Grado observado vs Grado de guía")
@@ -412,7 +419,7 @@ def observaciones_generales(obs_generales):
     fig.update_layout(legend_title_text="Momento")
     fig.update_xaxes(tickmode="linear", dtick=1)
 
-    st.plotly_chart(fig, config=chart_config)
+    st.plotly_chart(fig, config=chart_config, key=random.random())
 
     # Quienes sí usan la guía (guia_pedagogica == "Sí"), distribución vs sexo docente, grado observado, asignatura (y por momento), una gráfica por variable
     st.subheader("Distribución de docentes que usan guías de aprendizaje")
@@ -473,7 +480,7 @@ def observaciones_generales(obs_generales):
 
         fig.update_yaxes(range=[0, 100])
         fig.update_traces(textposition="outside")
-        st.plotly_chart(fig, config=chart_config)
+        st.plotly_chart(fig, config=chart_config, key=random.random())
         
 
 def observaciones_ti(obs_generales):
@@ -585,7 +592,7 @@ def observaciones_ti(obs_generales):
     fig.update_yaxes(range=[0, 100])
     fig.update_traces(textposition="outside")
 
-    st.plotly_chart(fig, config=chart_config)
+    st.plotly_chart(fig, config=chart_config, key=random.random())
     # Practicas en actividades desconectadas (act_desconectada_compartir, act_desconectada_cierre, act_desconectada_eficacia)
     st.subheader("Prácticas en actividades desconectadas")
     practicas = {
@@ -668,7 +675,7 @@ def observaciones_ti(obs_generales):
     # Update traces to make text outside bars
     fig.update_yaxes(range=[0, 100])
     fig.update_traces(textposition="outside")
-    st.plotly_chart(fig, config=chart_config)
+    st.plotly_chart(fig, config=chart_config, key=random.random())
 
     st.markdown("### Prácticas en actividades conectadas")
 
@@ -778,7 +785,7 @@ def observaciones_ti(obs_generales):
     fig_general.update_xaxes(categoryorder="array", categoryarray=Order)
     fig_general.update_traces(textposition="outside")
 
-    st.plotly_chart(fig_general, config=chart_config)
+    st.plotly_chart(fig_general, config=chart_config, key=random.random())
     
     # Distribución por práctica dentro de cada grupo PRIMM
     st.markdown("### Distribución por práctica dentro de cada grupo PRIMM")
@@ -832,7 +839,7 @@ def observaciones_ti(obs_generales):
         fig.update_yaxes(range=[0, 100])
         fig.update_traces(textposition="outside")
 
-        st.plotly_chart(fig, config=chart_config)
+        st.plotly_chart(fig, config=chart_config, key=random.random())
 
     st.subheader("Estrategias conectadas")
 
@@ -926,7 +933,7 @@ def observaciones_ti(obs_generales):
     fig.update_yaxes(range=[0, 100])
     fig.update_traces(textposition="outside")
     fig.update_layout(legend_title_text="Momento")
-    st.plotly_chart(fig, config=chart_config)
+    st.plotly_chart(fig, config=chart_config, key=random.random())
 
 
 def observaciones_stem(obs_generales):
@@ -1015,7 +1022,7 @@ def observaciones_stem(obs_generales):
     # Update traces to make text outside bars
     fig.update_yaxes(range=[0, 100])
     fig.update_traces(textposition="outside")
-    st.plotly_chart(fig, config=chart_config)
+    st.plotly_chart(fig, config=chart_config, key=random.random())
 
     st.subheader("Detalle de subhabilidades aplicadas")
 
@@ -1102,7 +1109,7 @@ def observaciones_stem(obs_generales):
     fig.update_yaxes(range=[0, 100])
     fig.update_traces(textposition="outside")
 
-    st.plotly_chart(fig, config=chart_config)
+    st.plotly_chart(fig, config=chart_config, key=random.random())
 
     st.subheader("Detalle de prácticas de Weintrop aplicadas")
 
@@ -1180,7 +1187,7 @@ def observaciones_stem(obs_generales):
     # Update traces to make text outside bars
     fig_overall.update_yaxes(range=[0, 100])
     fig_overall.update_traces(textposition="outside")
-    st.plotly_chart(fig_overall, config=chart_config)
+    st.plotly_chart(fig_overall, config=chart_config, key=random.random())
 
     # Define subcomponents per dimension
     weintrop_dims = {
@@ -1269,4 +1276,4 @@ def observaciones_stem(obs_generales):
         # Update traces to make text outside bars
         fig.update_yaxes(range=[0, 100])
         fig.update_traces(textposition="outside")
-        st.plotly_chart(fig, config=chart_config)
+        st.plotly_chart(fig, config=chart_config, key=random.random())

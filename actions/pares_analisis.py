@@ -1,3 +1,4 @@
+import random
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -5,6 +6,124 @@ import streamlit as st
 
 from utils.chart_config import get_chart_config
 
+
+def get_category_orders():
+    """Define los órdenes categóricos para variables ordinales"""
+    return {
+        # Variables demográficas
+        "grado": [
+            "Primero",
+            "Segundo",
+            "Tercero",
+            "Cuarto",
+            "Quinto",
+            "Sexto",
+            "Séptimo",
+            "Octavo",
+            "Noveno",
+            "Décimo",
+            "Undécimo",
+        ],
+        "nivel": ["Primaria", "Secundaria"],
+        "categoria_2024_base": ["Grupo Junior", "Grupo Senior", "Grupo Senior pro"],
+        "categoria_2025_base": ["Grupo Junior", "Grupo Senior", "Grupo Senior pro"],
+        "discapacidad": ["No", "Sí"],
+        "sexo": ["Mujer", "Hombre"],
+        "genero_par_experto_base": ["Mujer", "Hombre"],
+        "cant_clases_pc": ["0", "1", "2", "3", "4", "5", "6+"],
+        # Escalas Likert de acuerdo (5 niveles)
+        "sentir_me_gusta_clase": [
+            "Nada de acuerdo",
+            "Poco de acuerdo",
+            "Más o menos de acuerdo",
+            "De acuerdo",
+            "Muy de acuerdo",
+        ],
+        "sentir_atencion": [
+            "Nada de acuerdo",
+            "Poco de acuerdo",
+            "Más o menos de acuerdo",
+            "De acuerdo",
+            "Muy de acuerdo",
+        ],
+        "sentir_emociona": [
+            "Nada de acuerdo",
+            "Poco de acuerdo",
+            "Más o menos de acuerdo",
+            "De acuerdo",
+            "Muy de acuerdo",
+        ],
+        "sentir_espero_clase": [
+            "Nada de acuerdo",
+            "Poco de acuerdo",
+            "Más o menos de acuerdo",
+            "De acuerdo",
+            "Muy de acuerdo",
+        ],
+        "hacer_participo": [
+            "Nada de acuerdo",
+            "Poco de acuerdo",
+            "Más o menos de acuerdo",
+            "De acuerdo",
+            "Muy de acuerdo",
+        ],
+        "hacer_hago_dificiles": [
+            "Nada de acuerdo",
+            "Poco de acuerdo",
+            "Más o menos de acuerdo",
+            "De acuerdo",
+            "Muy de acuerdo",
+        ],
+        "hacer_busco_respuesta": [
+            "Nada de acuerdo",
+            "Poco de acuerdo",
+            "Más o menos de acuerdo",
+            "De acuerdo",
+            "Muy de acuerdo",
+        ],
+        # Escalas Likert de acuerdo (7 niveles - tipo Likert extendido)
+        "dec_inf_conoce_carreras": [
+            "Totalmente en desacuerdo",
+            "En desacuerdo",
+            "Neutro",
+            "De acuerdo",
+            "Totalmente de acuerdo",
+        ],
+        "dec_inf_consulta_entender": [
+            "Totalmente en desacuerdo",
+            "En desacuerdo",
+            "Neutro",
+            "De acuerdo",
+            "Totalmente de acuerdo",
+        ],
+        "dec_inf_info_evaluar": [
+            "Totalmente en desacuerdo",
+            "En desacuerdo",
+            "Neutro",
+            "De acuerdo",
+            "Totalmente de acuerdo",
+        ],
+        "dec_inf_confia_habilidades": [
+            "Totalmente en desacuerdo",
+            "En desacuerdo",
+            "Neutro",
+            "De acuerdo",
+            "Totalmente de acuerdo",
+        ],
+        # Escalas numéricas
+        "conceptos_identificar_importante": ["1", "2", "3", "4", "5"],
+        "conceptos_usar_ideas": ["1", "2", "3", "4", "5"],
+        "conceptos_dividir_problema": ["1", "2", "3", "4", "5"],
+        "conceptos_pensar_pasos": ["1", "2", "3", "4", "5"],
+        "conceptos_formas_diferentes": ["1", "2", "3", "4", "5"],
+        "problemas_decisiones_datos": ["1", "2", "3", "4", "5"],
+        "problemas_patrones": ["1", "2", "3", "4", "5"],
+        "problemas_interpretar_info": ["1", "2", "3", "4", "5"],
+        "problemas_arreglar": ["1", "2", "3", "4", "5"],
+        "problemas_explicar_error": ["1", "2", "3", "4", "5"],
+        "problemas_contar_solucion": ["1", "2", "3", "4", "5"],
+        "problemas_escribir_pasos": ["1", "2", "3", "4", "5"],
+    }
 
 def box_plots(df, columnas, x_axis=None, color=None, clean_names=None):
     # -- Box Plots para Análisis de Escalas ---
@@ -317,3 +436,58 @@ def migracion_graficas(
         if clean_column_names:
             freq_table = freq_table.rename(columns=clean_column_names)
         st.dataframe(freq_table)
+
+def correlation_plot(df, columnas, clean_names=None):
+    # Matriz de correlación para las columnas numéricas seleccionadas
+    corr_matrix = df[columnas].corr()
+
+    # Crear heatmap con Plotly
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=corr_matrix.values,
+            x=[
+                clean_names.get(col, col) if clean_names else col
+                for col in corr_matrix.columns
+            ],
+            y=[
+                clean_names.get(col, col) if clean_names else col
+                for col in corr_matrix.index
+            ],
+            colorscale="RdBu",
+            zmin=-1,
+            zmax=1,
+            colorbar=dict(title="Correlación"),
+        )
+    )
+
+    fig.update_layout(
+        title="Matriz de Correlación entre Escalas",
+        xaxis_nticks=len(corr_matrix.columns),
+        yaxis_nticks=len(corr_matrix.index),
+        height=600,
+    )
+
+    st.plotly_chart(fig, config=get_chart_config(), key=random.random())
+
+
+def scatter_plot(df, x_col, y_col, color=None, clean_names=None):
+    x_clean = clean_names.get(x_col, x_col) if clean_names else x_col
+    y_clean = clean_names.get(y_col, y_col) if clean_names else y_col
+    color_clean = clean_names.get(color, color) if clean_names and color else color
+
+    category_orders = get_category_orders()
+    fig = px.scatter(
+        df,
+        x=x_col,
+        y=y_col,
+        color=color,
+        height=600,
+        title=f"Diagrama de Dispersión entre {x_clean} y {y_clean}",
+        labels={x_col: x_clean, y_col: y_clean},
+        category_orders=category_orders,
+    )
+
+    if color:
+        fig.update_layout(legend_title=color_clean)
+
+    st.plotly_chart(fig, config=get_chart_config())

@@ -90,6 +90,14 @@ def main():
                 url_path="/biobots"
             )
         ],
+        "Análisis de Estudiantes": [
+            st.Page(
+                page="app_pages/estudiantes_analisis.py",
+                title="Análisis de Estudiantes",
+                icon="📝",
+                url_path="/estudiantes_analisis"
+            )
+        ]
     }
 
     app = st.navigation(pages)
