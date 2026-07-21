@@ -173,3 +173,6 @@ cython_debug/
 # ignore everything in data/qualtrics
 **/data/qualtrics/*
 **/data/limpieza/*
+
+# Local Codex skill
+.agents/

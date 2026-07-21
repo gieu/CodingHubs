@@ -47,6 +47,7 @@ NAVBAR_TEMPLATE = """
                 <a href="{BASE_URL}pares2024_2025" target="_self">Masters 2024-2025</a>
                 <a href="{BASE_URL}estudiantes2024_2025" target="_self">Estudiantes 2024-2025</a>
                 <a href="{BASE_URL}seguimiento_rural" target="_self">Seguimiento Rural</a>
+                <a href="{BASE_URL}biobots" target="_self">Biobots 2026</a>
             </div>
         </div>
     </div>

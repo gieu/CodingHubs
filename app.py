@@ -82,6 +82,14 @@ def main():
                 url_path="/seguimiento_rural"
             )
         ],
+        "Biobots": [
+            st.Page(
+                page="app_pages/biobots.py",
+                title="Biobots 2026",
+                icon="📊",
+                url_path="/biobots"
+            )
+        ],
     }
 
     app = st.navigation(pages)
