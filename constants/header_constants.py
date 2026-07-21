@@ -41,7 +41,8 @@ NAVBAR_TEMPLATE = """
             <div class="dropdown-content">
                 <a href="{BASE_URL}pares" target="_self">Pares Expertos</a>
                 <a href="{BASE_URL}encuentros_colaborativos" target="_self">Encuentros Colaborativos</a>
-                <a href="{BASE_URL}observaciones" target="_self">Observaciones de Aula</a>
+                <a href="{BASE_URL}observaciones" target="_self">Observaciones 2025</a>
+                <a href="{BASE_URL}observaciones_2026" target="_self">Observaciones 2026</a>
                 <a href="{BASE_URL}marco_2025" target="_self">Marco de Calidad 2025</a>
                 <a href="{BASE_URL}estudiantes_analisis" target="_self">Evaluación a Estudiantes</a>
                 <a href="{BASE_URL}pares_analisis" target="_self">Análisis de Masters</a>
@@ -50,13 +51,6 @@ NAVBAR_TEMPLATE = """
                 <a href="{BASE_URL}seguimiento_rural" target="_self">Seguimiento Rural</a>
                 <a href="{BASE_URL}biobots" target="_self">Biobots 2026</a>
             </div>
-        </div>
-        <div class="dropdown">
-            <a href="#" class="dropbtn">Biobots <span class="arrow-down">▼</span></a>
-            <div class="dropdown-content">
-                <a href="{BASE_URL}informe_biobots" target="_self">Informe Biobots</a>
-            </div>
-        </div>
         </div>
     </div>
 </div>

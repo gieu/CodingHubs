@@ -14,9 +14,12 @@ from constants.header_constants import header
 from utils.chart_config import get_chart_config
 
 chart_config = get_chart_config()
+OBSERVACIONES_YEAR = globals().get("OBSERVACIONES_YEAR", 2025)
 
 
 header("#282255")
+st.title(f"Observaciones de aula {OBSERVACIONES_YEAR}")
+st.caption(f"Seguimiento de las observaciones de aula de la vigencia {OBSERVACIONES_YEAR}")
 
 
 CSV_URL_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQcfm9v6gG5wBoIhmIaFYlmH3lN-n1xTIs9NqYY9D_ynMIAWB-4qZMoFA43cogaZHLsZwhLcyBmyU-j/pub?gid=719223759&single=true&output=csv"
@@ -105,7 +108,7 @@ with tab3:
 
 st.markdown("---")
 st.write(
-    "© 2025 Colombia Programa - Ministerio de Tecnologías de la Información y las Comunicaciones (MinTIC)"
+    f"© {OBSERVACIONES_YEAR} Colombia Programa - Ministerio de Tecnologías de la Información y las Comunicaciones (MinTIC)"
 )
 
 # Formatear el HTML con las imágenes convertidas a base64

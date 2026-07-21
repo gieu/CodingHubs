@@ -37,9 +37,15 @@ def main():
         "Observaciones de Aula": [
             st.Page(
                 page="app_pages/observaciones.py",
-                title="Graficador de Instantaneas",
+                title="Observaciones 2025",
                 icon="📊",
                 url_path="/observaciones"
+            ),
+            st.Page(
+                page="app_pages/observaciones_2026.py",
+                title="Observaciones 2026",
+                icon="📊",
+                url_path="/observaciones_2026"
             )
         ],
         "Marco de calidad 2025": [
