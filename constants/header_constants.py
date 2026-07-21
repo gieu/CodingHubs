@@ -53,6 +53,7 @@ NAVBAR_TEMPLATE = """
             <a href="#" class="dropbtn">Biobots <span class="arrow-down">▼</span></a>
             <div class="dropdown-content">
                 <a href="{BASE_URL}informe_biobots" target="_self">Informe Biobots</a>
+                <a href="{BASE_URL}docentes_observados" target="_self">Observaciones Docentes</a>
             </div>
         </div>
         </div>

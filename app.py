@@ -89,6 +89,14 @@ def main():
                 icon="🤖",
                 url_path="/informe_biobots"
             )
+        ],
+        "Observaciones Docentes": [
+            st.Page(
+                page="app_pages/docentes_observados.py",
+                title="Observaciones Docentes Biobots",
+                icon="📋",
+                url_path="/docentes_observados"
+            )
         ]
     }
 
