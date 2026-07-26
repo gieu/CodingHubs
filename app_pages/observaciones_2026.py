@@ -2,6 +2,7 @@
 
 import unicodedata
 import urllib.parse
+import re
 
 import pandas as pd
 import plotly.express as px
@@ -20,20 +21,18 @@ SOURCE_URL = (
 )
 
 COLORS = {
-    "blue": "#83C9FF",
-    "blue_dark": "#0068C9",
-    "purple": "#662482",
-    "pink": "#e5007e",
-    "deep_blue": "#23085a",
-    "gray": "#A8B2BD",
-    "light": "#EAF4FB",
+    "blue": "#1DB2E8",
+    "green": "#00A651",
+    "orange": "#F39C12",
+    "blue_dark": "#0D47A1",
     "text": "#2C3E50",
+    "light": "#E3F2FD",
 }
 
 CONNECTION_COLORS = {
-    "Sí, explícita": COLORS["blue_dark"],
-    "Implícita o superficial": COLORS["pink"],
-    "No": COLORS["gray"],
+    "Sí, explícita": COLORS["green"],
+    "Implícita o superficial": COLORS["orange"],
+    "No": COLORS["blue_dark"],
 }
 
 
@@ -65,19 +64,67 @@ def is_yes(series):
     return series.map(normalize).isin({"si", "sí", "yes", "true", "verdadero"})
 
 
+def clean_teacher_names(series):
+    """Limpia la columna de nombres de docentes.
+    
+    - Convierte a string y elimina espacios
+    - Reemplaza vacíos por NA
+    - Excluye el valor 'Nombres completos docentes' (encabezado repetido)
+    """
+    cleaned = series.astype("string").str.strip()
+    cleaned = cleaned.replace({"": pd.NA, "NA": pd.NA, "na": pd.NA})
+    cleaned = cleaned.where(cleaned != "Nombres completos docentes", pd.NA)
+    return cleaned
+
+
+def clean_p6_value(value):
+    """Normaliza valores de P6 y filtra registros inválidos."""
+    text = normalize(value)
+    if text in {"", "nan", "na", "p6", "-"}:
+        return None
+    return text
+
+
+def extract_scenarios_from_p6(value):
+    """Extrae escenarios canónicos desde una respuesta P6."""
+    text = clean_p6_value(value)
+    if text is None:
+        return set()
+
+    scenarios = set()
+    if "exploracion del juego" in text:
+        scenarios.add("Exploración del juego")
+
+    for number in re.findall(r"escenario\s*(\d+)", text):
+        scenarios.add(f"Escenario {int(number)}")
+
+    return scenarios
+
+
+def scenario_sort_key(label):
+    if label == "Exploración del juego":
+        return (0, 0)
+    if label.startswith("Escenario "):
+        try:
+            return (1, int(label.split(" ", 1)[1]))
+        except (ValueError, IndexError):
+            return (1, 999)
+    return (2, 999)
+
+
 def style_figure(fig, height=410):
     fig.update_layout(
         height=height,
         paper_bgcolor="white",
         plot_bgcolor="white",
         font=dict(family="Arial", color=COLORS["text"]),
-        title=dict(font=dict(size=20, color=COLORS["deep_blue"]), x=0),
+        title=dict(font=dict(size=20, color=COLORS["text"]), x=0),
         margin=dict(l=45, r=25, t=80, b=45),
         hoverlabel=dict(bgcolor="white"),
         legend_title_text="",
     )
     fig.update_xaxes(showgrid=False, zeroline=False)
-    fig.update_yaxes(gridcolor="#E8EEF3", zeroline=False)
+    fig.update_yaxes(gridcolor=COLORS["light"], zeroline=False)
     return fig
 
 
@@ -89,7 +136,7 @@ def percent_bar(labels, values, title, highlight=None):
     chart = pd.DataFrame({"Indicador": labels, "Porcentaje": values})
     chart["Etiqueta"] = chart["Porcentaje"].map(lambda value: f"{value:.1f}%")
     colors = [
-        COLORS["pink"] if label == highlight else COLORS["blue_dark"]
+        COLORS["orange"] if label == highlight else COLORS["blue"]
         for label in chart["Indicador"]
     ]
     fig = px.bar(
@@ -119,7 +166,7 @@ def multiselect_percent(data, indices, labels):
 def insight_box(hallazgo, implicacion, accion):
     st.markdown(
         f"""
-        <div style="background:#F5F9FC;border-left:5px solid {COLORS['pink']};
+        <div style="background:{COLORS['light']};border-left:5px solid {COLORS['orange']};
                     padding:15px 18px;margin:8px 0 24px;border-radius:0 8px 8px 0;color:{COLORS['text']}">
             <strong>Lectura para la acción</strong><br>
             <strong>Hallazgo:</strong> {hallazgo}<br>
@@ -174,7 +221,7 @@ try:
             x="Escenario",
             y="Observaciones",
             text="Observaciones",
-            color_discrete_sequence=[COLORS["blue_dark"]],
+            color_discrete_sequence=[COLORS["blue"]],
             title="El escenario 2 concentra la mayoría de las observaciones",
         )
         fig.update_traces(textposition="outside", cliponaxis=False)
@@ -204,7 +251,6 @@ try:
                 support_labels,
                 support_values,
                 "Los materiales pedagógicos de apoyo se usan poco",
-                highlight="Afiche de apoyo",
             ),
             "obs2026_support",
         )
@@ -309,6 +355,175 @@ try:
 
 except Exception as exc:
     st.error("No fue posible cargar la fuente de observaciones 2026.")
+    st.info("Verifique que el archivo continúe compartido y permita la exportación pública.")
+    st.exception(exc)
+
+st.markdown("---")
+
+# Sección: Frecuencia de implementación por docente
+st.subheader("Frecuencia de implementación del juego por docente")
+st.markdown(
+    "<p style='font-size:1.05rem;color:#52606D'>Distribución de docentes según el número de sesiones implementadas con el juego Biobots.</p>",
+    unsafe_allow_html=True,
+)
+
+SHEET_ID = "1rXvcxnxjMRuONbcpJ1yRoQG3GXRcGBfACxnSCQb2MJI"
+GID = "0"
+TEACHER_TRACKING_URL = (
+    f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid={GID}"
+)
+
+try:
+    teacher_data = load_data(TEACHER_TRACKING_URL)
+    
+    if "Nombres completos docentes" in teacher_data.columns and "P4" in teacher_data.columns:
+        teacher_df = teacher_data.copy()
+        teacher_df["Nombres completos docentes"] = clean_teacher_names(
+            teacher_df["Nombres completos docentes"]
+        )
+        teacher_df = teacher_df.dropna(subset=["Nombres completos docentes"])
+        
+        teacher_df["P4_numeric"] = pd.to_numeric(
+            teacher_df["P4"].astype("string").str.strip(),
+            errors="coerce"
+        ).fillna(0)
+        
+        teacher_totals = (
+            teacher_df.groupby("Nombres completos docentes")["P4_numeric"]
+            .sum()
+            .round()
+            .astype(int)
+        )
+        
+        num_teachers = len(teacher_totals)
+        if num_teachers != 10:
+            st.info(
+                f"Se encontraron {num_teachers} docentes en los datos. "
+                f"El requerimiento esperaba 10 docentes."
+            )
+        
+        freq_distribution = (
+            teacher_totals.value_counts()
+            .sort_index()
+            .reset_index()
+        )
+        freq_distribution.columns = ["Sesiones", "Docentes"]
+        
+        if not freq_distribution.empty:
+            fig_teacher = px.bar(
+                freq_distribution,
+                x="Sesiones",
+                y="Docentes",
+                text="Docentes",
+                color_discrete_sequence=[COLORS["blue"]],
+                title="Frecuencia de implementación del juego por docente (10 docentes)",
+            )
+            fig_teacher.update_traces(
+                textposition="outside",
+                cliponaxis=False,
+            )
+            fig_teacher.update_xaxes(
+                title="Número de sesiones de implementación",
+                dtick=1,
+            )
+            fig_teacher.update_yaxes(
+                title="Número de docentes",
+                dtick=1,
+            )
+            plot(style_figure(fig_teacher), "teacher_p4_frequency")
+            
+            insight_box(
+                f"{num_teachers} docentes reportan datos; la distribución muestra variación en la frecuencia de implementación.",
+                "la diferencia en el número de sesiones indica oportunidades de acompañamiento diferenciado.",
+                "priorizar a docentes con menor frecuencia de implementación para alcanzar cobertura homogénea."
+            )
+            
+            with st.expander("Ver detalle de sesiones por docente"):
+                teacher_detail = (
+                    teacher_totals.sort_values(ascending=False)
+                    .reset_index()
+                )
+                teacher_detail.columns = ["Docente", "Total de sesiones"]
+                st.dataframe(
+                    teacher_detail,
+                    use_container_width=True,
+                    hide_index=True,
+                )
+        else:
+            st.info("No hay datos suficientes para construir la gráfica de frecuencia por docente.")
+    else:
+        st.warning("Las columnas requeridas ('Nombres completos docentes', 'P4') no se encuentran en la fuente de datos.")
+
+    st.subheader("Docentes únicos por escenario implementado (P6)")
+    if "Nombres completos docentes" in teacher_data.columns and "P6" in teacher_data.columns:
+        p6_df = teacher_data.copy()
+        p6_df["Nombres completos docentes"] = clean_teacher_names(
+            p6_df["Nombres completos docentes"]
+        )
+        p6_df = p6_df.dropna(subset=["Nombres completos docentes"]).copy()
+        p6_df["P6_clean"] = p6_df["P6"].map(clean_p6_value)
+        p6_df = p6_df.dropna(subset=["P6_clean"]).copy()
+
+        teacher_scenario_records = []
+        for _, row in p6_df.iterrows():
+            teacher_name = row["Nombres completos docentes"]
+            raw_p6 = row["P6"]
+            for scenario in extract_scenarios_from_p6(raw_p6):
+                teacher_scenario_records.append(
+                    {
+                        "Docente": teacher_name,
+                        "Escenario": scenario,
+                    }
+                )
+
+        if teacher_scenario_records:
+            teacher_scenario_df = (
+                pd.DataFrame(teacher_scenario_records)
+                .drop_duplicates(subset=["Docente", "Escenario"])
+            )
+            p6_counts = (
+                teacher_scenario_df.groupby("Escenario", as_index=False)
+                .size()
+                .rename(columns={"size": "Docentes"})
+            )
+            ordered_scenarios = sorted(
+                p6_counts["Escenario"].tolist(),
+                key=scenario_sort_key,
+            )
+            p6_counts["Escenario"] = pd.Categorical(
+                p6_counts["Escenario"],
+                categories=ordered_scenarios,
+                ordered=True,
+            )
+            p6_counts = p6_counts.sort_values("Escenario")
+
+            fig_p6 = px.bar(
+                p6_counts,
+                x="Escenario",
+                y="Docentes",
+                text="Docentes",
+                color_discrete_sequence=[COLORS["blue"]],
+                category_orders={"Escenario": ordered_scenarios},
+                title="Número de docentes únicos que implementaron cada escenario",
+            )
+            fig_p6.update_traces(textposition="outside", cliponaxis=False)
+            fig_p6.update_xaxes(title="Escenarios implementados")
+            fig_p6.update_yaxes(title="Número de docentes", dtick=1)
+            plot(style_figure(fig_p6), "teacher_p6_unique_scenarios")
+
+            with st.expander("Ver detalle de docentes únicos por escenario"):
+                st.dataframe(
+                    p6_counts,
+                    use_container_width=True,
+                    hide_index=True,
+                )
+        else:
+            st.info("No hay escenarios válidos en P6 para construir la gráfica.")
+    else:
+        st.warning("Las columnas requeridas ('Nombres completos docentes', 'P6') no se encuentran en la fuente de datos.")
+
+except Exception as exc:
+    st.error("No fue posible cargar los datos de seguimiento de docentes.")
     st.info("Verifique que el archivo continúe compartido y permita la exportación pública.")
     st.exception(exc)
 
