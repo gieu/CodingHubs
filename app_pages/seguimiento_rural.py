@@ -13,7 +13,7 @@ from utils.chart_config import get_chart_config
 header("#282255")
 chart_config = get_chart_config()
 
-RURAL_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSV5EzdlBEDHngwEQtfM6L3ilW0Bj8oMtXB1ndPB5GNszQoYJjRKcS4utBO9akNQuxv_Fgj8V7SH9rp/pub?gid=1811707145&single=true&output=csv"
+RURAL_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSV5EzdlBEDHngwEQtfM6L3ilW0Bj8oMtXB1ndPB5GNszQoYJjRKcS4utBO9akNQuxv_Fgj8V7SH9rp/pub?output=csv"
 
 QUESTION_TEXTS = {
     "P1": "¿Esta semana ha utilizado el juego Biobots con los estudiantes?",
