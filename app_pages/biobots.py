@@ -1,5 +1,6 @@
 import unicodedata
 import urllib.parse
+import re
 
 import pandas as pd
 import plotly.express as px
@@ -18,6 +19,11 @@ CONSOLIDADO_URL = (
     "https://docs.google.com/spreadsheets/d/"
     "1GX2clKbLTkcS9-2p8Tc3-v7Ypxka3WGiyiGm7nAeYCg/"
     "export?format=csv&gid=89776440"
+)
+SHEET_ID = "1rXvcxnxjMRuONbcpJ1yRoQG3GXRcGBfACxnSCQb2MJI"
+GID = "0"
+TEACHER_TRACKING_URL = (
+    f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid={GID}"
 )
 COLORS = {
     "blue": "#1DB2E8",
@@ -72,6 +78,46 @@ def normalize_text(value):
         .strip()
         .split()
     )
+
+
+def clean_teacher_names(series):
+    cleaned = series.astype("string").str.strip()
+    cleaned = cleaned.replace({"": pd.NA, "NA": pd.NA, "na": pd.NA})
+    cleaned = cleaned.where(cleaned != "Nombres completos docentes", pd.NA)
+    return cleaned
+
+
+def clean_p6_value(value):
+    text = normalize_text(value)
+    if text in {"", "nan", "na", "p6", "-"}:
+        return None
+    return text
+
+
+def extract_scenarios_from_p6(value):
+    text = clean_p6_value(value)
+    if text is None:
+        return set()
+
+    scenarios = set()
+    if "exploracion del juego" in text:
+        scenarios.add("Exploración del juego")
+
+    for number in re.findall(r"escenario\s*(\d+)", text):
+        scenarios.add(f"Escenario {int(number)}")
+
+    return scenarios
+
+
+def scenario_sort_key(label):
+    if label == "Exploración del juego":
+        return (0, 0)
+    if label.startswith("Escenario "):
+        try:
+            return (1, int(label.split(" ", 1)[1]))
+        except (ValueError, IndexError):
+            return (1, 999)
+    return (2, 999)
 
 
 def recognized_game(series):
@@ -372,12 +418,146 @@ try:
     plot(implementation_heatmap(data), "biobots_heatmap")
     analyze_heatmap(data)
 
+    st.subheader("Seguimiento de implementación por docente")
+    try:
+        teacher_data = load_consolidado(TEACHER_TRACKING_URL)
+
+        if "Nombres completos docentes" in teacher_data.columns and "P4" in teacher_data.columns:
+            teacher_df = teacher_data.copy()
+            teacher_df["Nombres completos docentes"] = clean_teacher_names(
+                teacher_df["Nombres completos docentes"]
+            )
+            teacher_df = teacher_df.dropna(subset=["Nombres completos docentes"])
+            teacher_df["P4_numeric"] = pd.to_numeric(
+                teacher_df["P4"].astype("string").str.strip(),
+                errors="coerce",
+            ).fillna(0)
+
+            teacher_totals = (
+                teacher_df.groupby("Nombres completos docentes")["P4_numeric"]
+                .sum()
+                .round()
+                .astype(int)
+            )
+
+            num_teachers = len(teacher_totals)
+            if num_teachers != 10:
+                st.info(
+                    f"Se encontraron {num_teachers} docentes en los datos. "
+                    "El requerimiento esperaba 10 docentes."
+                )
+
+            freq_distribution = (
+                teacher_totals.value_counts()
+                .sort_index()
+                .reset_index()
+            )
+            freq_distribution.columns = ["Sesiones", "Docentes"]
+
+            if not freq_distribution.empty:
+                fig_teacher = px.bar(
+                    freq_distribution,
+                    x="Sesiones",
+                    y="Docentes",
+                    text="Docentes",
+                    color_discrete_sequence=[COLORS["blue"]],
+                    title="Frecuencia de implementación del juego por docente (10 docentes)",
+                )
+                fig_teacher.update_traces(textposition="outside", cliponaxis=False)
+                fig_teacher.update_xaxes(title="Número de sesiones de implementación", dtick=1)
+                fig_teacher.update_yaxes(title="Número de docentes", dtick=1)
+                plot(style_figure(fig_teacher), "biobots_teacher_p4_frequency")
+
+                with st.expander("Ver detalle de sesiones por docente"):
+                    teacher_detail = (
+                        teacher_totals.sort_values(ascending=False)
+                        .reset_index()
+                    )
+                    teacher_detail.columns = ["Docente", "Total de sesiones"]
+                    st.dataframe(
+                        teacher_detail,
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+            else:
+                st.info("No hay datos suficientes para construir la gráfica de frecuencia por docente.")
+        else:
+            st.warning("Las columnas requeridas ('Nombres completos docentes', 'P4') no se encuentran en la fuente de datos.")
+
+        st.subheader("Docentes únicos por escenario implementado (P6)")
+        if "Nombres completos docentes" in teacher_data.columns and "P6" in teacher_data.columns:
+            p6_df = teacher_data.copy()
+            p6_df["Nombres completos docentes"] = clean_teacher_names(
+                p6_df["Nombres completos docentes"]
+            )
+            p6_df = p6_df.dropna(subset=["Nombres completos docentes"]).copy()
+            p6_df["P6_clean"] = p6_df["P6"].map(clean_p6_value)
+            p6_df = p6_df.dropna(subset=["P6_clean"]).copy()
+
+            teacher_scenario_records = []
+            for _, row in p6_df.iterrows():
+                teacher_name = row["Nombres completos docentes"]
+                raw_p6 = row["P6"]
+                for scenario in extract_scenarios_from_p6(raw_p6):
+                    teacher_scenario_records.append(
+                        {"Docente": teacher_name, "Escenario": scenario}
+                    )
+
+            if teacher_scenario_records:
+                teacher_scenario_df = (
+                    pd.DataFrame(teacher_scenario_records)
+                    .drop_duplicates(subset=["Docente", "Escenario"])
+                )
+                p6_counts = (
+                    teacher_scenario_df.groupby("Escenario", as_index=False)
+                    .size()
+                    .rename(columns={"size": "Docentes"})
+                )
+                ordered_scenarios = sorted(
+                    p6_counts["Escenario"].tolist(),
+                    key=scenario_sort_key,
+                )
+                p6_counts["Escenario"] = pd.Categorical(
+                    p6_counts["Escenario"],
+                    categories=ordered_scenarios,
+                    ordered=True,
+                )
+                p6_counts = p6_counts.sort_values("Escenario")
+
+                fig_p6 = px.bar(
+                    p6_counts,
+                    x="Escenario",
+                    y="Docentes",
+                    text="Docentes",
+                    color_discrete_sequence=[COLORS["blue"]],
+                    category_orders={"Escenario": ordered_scenarios},
+                    title="Número de docentes únicos que implementaron cada escenario",
+                )
+                fig_p6.update_traces(textposition="outside", cliponaxis=False)
+                fig_p6.update_xaxes(title="Escenarios implementados")
+                fig_p6.update_yaxes(title="Número de docentes", dtick=1)
+                plot(style_figure(fig_p6), "biobots_teacher_p6_unique_scenarios")
+
+                with st.expander("Ver detalle de docentes únicos por escenario"):
+                    st.dataframe(
+                        p6_counts,
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+            else:
+                st.info("No hay escenarios válidos en P6 para construir la gráfica.")
+        else:
+            st.warning("Las columnas requeridas ('Nombres completos docentes', 'P6') no se encuentran en la fuente de datos.")
+    except Exception as teacher_exc:
+        st.error("No fue posible cargar los datos de seguimiento de docentes.")
+        st.exception(teacher_exc)
+
     with st.expander("Definiciones y fuente"):
         st.markdown(
             "- **Implementación inicial:** reconocimiento del juego o frecuencia mayor que cero en cualquier escenario.\n"
             "- **Secuencia hasta escenario 3:** armado y programación del escenario 2, y escenario 3, todos con frecuencia mayor que cero.\n"
             "- **Grupo tratamiento:** 10 docentes definidos en el requerimiento. Cada línea usa su propio denominador.\n"
-            "- **Fuente:** `Seguimiento_Tutores_2026`, pestaña `Consolidado`. Actualización en caché cada 5 minutos."
+            "- **Fuente:** `Seguimiento_Tutores_2026`, pestaña `Consolidado`, y `BD. Seguimiento Manizales Docentes` (P4/P6). Actualización en caché cada 5 minutos."
         )
 except Exception as exc:
     st.error("No fue posible cargar el consolidado de Biobots.")
