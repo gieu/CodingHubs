@@ -114,6 +114,35 @@ def multiselect_percent(data, indices, labels):
     return labels, values
 
 
+def closure_activity_percent(data):
+    total = len(data)
+    closure_columns = {
+        "Reflexión grupal": column(data, 124).map(normalize).eq("1"),
+        "Retroalimentación individual": column(data, 125).map(normalize).eq("1"),
+        "Metacognición": column(data, 126).map(normalize).eq("1"),
+        "Sin actividad de cierre": column(data, 127).map(normalize).eq("1"),
+    }
+    no_closure = closure_columns["Sin actividad de cierre"]
+    labels = list(closure_columns.keys())
+    values = []
+    for label in labels:
+        selected = closure_columns[label]
+        if label != "Sin actividad de cierre":
+            selected = selected & ~no_closure
+        values.append(selected.sum() / total * 100 if total else 0)
+    ordered = sorted(zip(labels, values), key=lambda item: item[1], reverse=True)
+    return [label for label, _ in ordered], [value for _, value in ordered]
+
+
+def single_select_percent(data, index, order=None):
+    total = len(data)
+    counts = column(data, index).fillna("Sin información").astype(str).str.strip().value_counts()
+    if order:
+        counts = counts.reindex([label for label in order if label in counts.index])
+    values = [count / total * 100 if total else 0 for count in counts]
+    return list(counts.index), values
+
+
 def insight_box(hallazgo, implicacion, accion):
     st.markdown(
         f"""
@@ -176,7 +205,7 @@ try:
             title="El escenario 2 concentra la mayoría de las observaciones",
         )
         fig.update_traces(textposition="outside", cliponaxis=False)
-        fig.update_xaxes(title="")
+        fig.update_xaxes(title="Escenario")
         fig.update_yaxes(title="Número de observaciones", dtick=1)
         plot(style_figure(fig), "obs2026_scenarios")
 
@@ -228,6 +257,21 @@ try:
             "obs2026_doubts",
         )
 
+        vocab_users_labels, vocab_users_values = single_select_percent(
+            data,
+            104,
+            ["Ambos/as por igual", "El/la docente", "Los/las estudiantes", "Sin información"],
+        )
+        plot(
+            percent_bar(
+                vocab_users_labels,
+                vocab_users_values,
+                "El vocabulario del juego se comparte entre docente y estudiantes",
+                highlight="Ambos/as por igual",
+            ),
+            "obs2026_vocab_users",
+        )
+
         monitoring_labels = [
             "Se desplaza para monitorear",
             "Aclara dudas en los grupos",
@@ -255,6 +299,8 @@ try:
                 "no": "No",
             }
         ).fillna("Sin información")
+        no_closure = column(data, 127).map(normalize).eq("1")
+        connection = connection.mask(no_closure, "No")
         connection_df = connection.value_counts().rename_axis("Conexión").reset_index(name="Observaciones")
         connection_df["Porcentaje"] = connection_df["Observaciones"] / total * 100
         connection_df["Etiqueta"] = connection_df.apply(
@@ -271,20 +317,13 @@ try:
             category_orders={"Conexión": ["Sí, explícita", "Implícita o superficial", "No"]},
         )
         fig.update_traces(textposition="outside", cliponaxis=False)
-        fig.update_xaxes(title="")
+        fig.update_xaxes(title="Conexión con PC")
         fig.update_yaxes(title="Porcentaje de observaciones", ticksuffix="%", range=[0, 108])
-        plot(style_figure(fig), "obs2026_connection")
+        fig = style_figure(fig)
+        fig.update_layout(margin=dict(l=45, r=25, t=80, b=80))
+        plot(fig, "obs2026_connection")
 
-        close_labels, close_values = multiselect_percent(
-            data,
-            [124, 125, 126, 127],
-            [
-                "Reflexión grupal",
-                "Retroalimentación individual",
-                "Metacognición",
-                "Sin actividad de cierre",
-            ],
-        )
+        close_labels, close_values = closure_activity_percent(data)
         plot(
             percent_bar(
                 close_labels,
