@@ -161,7 +161,7 @@ def analysis_callout(hallazgo, implicacion, accion):
 
 
 def implementation_distribution(df):
-    sessions = numeric_column(df, "CS").round().astype(int)
+    sessions = numeric_column(df, "CN").round().astype(int)
     plot_df = (
         sessions.value_counts()
         .sort_index()
@@ -184,7 +184,7 @@ def implementation_distribution(df):
 
 
 def analyze_implementation_distribution(df):
-    sessions = numeric_column(df, "CS").round().astype(int)
+    sessions = numeric_column(df, "CN").round().astype(int)
     median = float(sessions.median())
     maximum = int(sessions.max())
     zero_count = int(sessions.eq(0).sum())
