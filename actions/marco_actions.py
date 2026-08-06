@@ -4,6 +4,9 @@ import plotly.express as px  # type: ignore
 import plotly.graph_objects as go  # type: ignore
 import streamlit as st
 from constants.marco_constants import COLORS, CSV_URL, MAPPING
+ 
+
+MOMENTOS_RADAR = ["pre_2023", "post_2023", "pre_2024", "post_2024", "post_2025", "nivel_2025"]
 
 
 def centrar_texto(texto, tipo="h1"):
@@ -34,96 +37,58 @@ def obtener_opciones_codigos(df):
 
 def obtener_datos_pretest_posttest(datos_codigo):
     """
-    Obtiene los datos de Pretest y Posttest de un código de IE.
+    Obtiene las series disponibles de un codigo de IE para el radar.
     """
-    if (
-        "pre_2024" in datos_codigo["Momento"].values
-        and "post_2024" in datos_codigo["Momento"].values
-        and "post_2025" in datos_codigo["Momento"].values
-    ):
-        pretest = datos_codigo[datos_codigo["Momento"] == "pre_2024"].iloc[0, 2:]
-        posttest = datos_codigo[datos_codigo["Momento"] == "post_2024"].iloc[0, 2:]
-        posttest_2025 = datos_codigo[datos_codigo["Momento"] == "post_2025"].iloc[0, 2:]
-        
-        if "nivel_2025" in datos_codigo["Momento"].values:
-            nivel_2025 = datos_codigo[datos_codigo["Momento"] == "nivel_2025"].iloc[0, 2:]
-            nivel_2025_numeric = nivel_2025.map(MAPPING)
-            nivel_2025_numeric = pd.concat(
-                [nivel_2025_numeric, pd.Series([nivel_2025_numeric.iloc[0]])], ignore_index=True
-            )
-        else:
-            nivel_2025_numeric = None
-        
+    series = {}
+    categorias = None
 
-        pretest_numeric = pretest.map(MAPPING)
-        posttest_numeric = posttest.map(MAPPING)
-        posttest_2025_numeric = posttest_2025.map(MAPPING)
-        
-        pretest_numeric = pd.concat(
-            [pretest_numeric, pd.Series([pretest_numeric.iloc[0]])], ignore_index=True
+    for momento in MOMENTOS_RADAR:
+        datos_momento = datos_codigo[datos_codigo["Momento"] == momento]
+        if datos_momento.empty:
+            continue
+
+        valores = datos_momento.iloc[0, 2:].astype(str).str.strip()
+        valores_numeric = valores.map(MAPPING)
+        valores_numeric = pd.concat(
+            [valores_numeric, pd.Series([valores_numeric.iloc[0]])],
+            ignore_index=True,
         )
-        posttest_numeric = pd.concat(
-            [posttest_numeric, pd.Series([posttest_numeric.iloc[0]])], ignore_index=True
-        )
-        posttest_2025_numeric = pd.concat(
-            [posttest_2025_numeric, pd.Series([posttest_2025_numeric.iloc[0]])], ignore_index=True
-        )
-        
-    
-        categorias = list(pretest.index)
-        return pretest_numeric, posttest_numeric, posttest_2025_numeric,nivel_2025_numeric, categorias
-    return None, None, None, None, None
+
+        series[momento] = valores_numeric
+        if categorias is None:
+            categorias = list(valores.index)
+
+    if not series:
+        return None, None
+
+    return series, categorias
 
 
-def crear_grafico_radar(pretest_numeric, posttest_numeric, posttest_2025_numeric,  categorias, codigo,nivel_2025_numeric=None):
+def crear_grafico_radar(series_momentos, categorias, codigo):
     """
-    Crea un gráfico de radar comparando los datos de Pretest y Posttest.
+    Crea un grafico de radar comparando los momentos disponibles.
     """
-    
-
     fig = go.Figure()
 
-    fig.add_trace(
-        go.Scatterpolar(
-            r=pretest_numeric.values,
-            theta=categorias + [categorias[0]],  # Cerrar el gráfico
-            fill="toself",
-            name="Pre_2024",
-            line_color=COLORS["pre_2024"]["line"],
-            fillcolor=COLORS["pre_2024"]["fill"],
-        )
+    momentos_disponibles = [momento for momento in MOMENTOS_RADAR if momento in series_momentos]
+    orden_dibujo = sorted(
+        momentos_disponibles,
+        key=lambda momento: series_momentos[momento].iloc[:-1].mean(),
+        reverse=True,
     )
 
-    fig.add_trace(
-        go.Scatterpolar(
-            r=posttest_numeric.values,
-            theta=categorias + [categorias[0]],  # Cerrar el gráfico
-            fill="toself",
-            name="Post_2024",
-            line_color=COLORS["post_2024"]["line"],
-            fillcolor=COLORS["post_2024"]["fill"],
-        )
-    )
-
-    fig.add_trace(
-        go.Scatterpolar(
-            r=posttest_2025_numeric.values,
-            theta=categorias + [categorias[0]],  # Cerrar el gráfico
-            fill="toself",
-            name="Post_2025",
-            line_color=COLORS["post_2025"]["line"],
-            fillcolor=COLORS["post_2025"]["fill"],
-        )
-    )
-    if nivel_2025_numeric is not None:
+    for momento in orden_dibujo:
+        color = COLORS[momento]
         fig.add_trace(
             go.Scatterpolar(
-                r=nivel_2025_numeric.values,
-                theta=categorias + [categorias[0]],  # Cerrar el gráfico
+                r=series_momentos[momento].values,
+                theta=categorias + [categorias[0]],
                 fill="toself",
-                name="Nivel_2025",
-                line_color=COLORS["nivel_2025"]["line"],
-                fillcolor=COLORS["nivel_2025"]["fill"],
+                connectgaps=True,
+                name=momento.replace("_", " ").title(),
+                line_color=color["line"],
+                fillcolor=color["fill"],
+                legendrank=MOMENTOS_RADAR.index(momento),
             )
         )
 
@@ -143,8 +108,8 @@ def crear_grafico_radar(pretest_numeric, posttest_numeric, posttest_2025_numeric
             ),
         ),
         showlegend=True,
-        title=f"Comparación Pretest y Posttest para {codigo}",
-        height=600
+        title=f"Comparacion historica del Marco de Calidad para {codigo}",
+        height=600,
     )
 
     return fig

@@ -244,18 +244,14 @@ with tab1:
         for codigo in codigos_selececionados:
             datos_codigo = df_seleccionados[df_seleccionados["Código IE"] == codigo]
 
-            pretest_numeric, posttest_numeric, posttest_2025_numeric, nivel_2025_numeric, categorias = (
-                obtener_datos_pretest_posttest(datos_codigo)
-            )
+            series_momentos, categorias = obtener_datos_pretest_posttest(datos_codigo)
 
-            if pretest_numeric is not None and posttest_numeric is not None and posttest_2025_numeric is not None:
-                fig = crear_grafico_radar(
-                    pretest_numeric, posttest_numeric, posttest_2025_numeric, categorias, codigo, nivel_2025_numeric
-                )
+            if series_momentos is not None and categorias is not None:
+                fig = crear_grafico_radar(series_momentos, categorias, codigo)
                 st.plotly_chart(fig)
             else:
                 st.write(
-                    f"Datos incompletos para {codigo}. Se requieren tanto Pretest como Posttest."
+                    f"No hay momentos disponibles para generar el grÃ¡fico de {codigo}."
                 )
     else:
         st.write(
