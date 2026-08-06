@@ -70,9 +70,14 @@ def crear_grafico_radar(series_momentos, categorias, codigo):
     """
     fig = go.Figure()
 
-    for momento in MOMENTOS_RADAR:
-        if momento not in series_momentos:
-            continue
+    momentos_disponibles = [momento for momento in MOMENTOS_RADAR if momento in series_momentos]
+    orden_dibujo = sorted(
+        momentos_disponibles,
+        key=lambda momento: series_momentos[momento].iloc[:-1].mean(),
+        reverse=True,
+    )
+
+    for momento in orden_dibujo:
         color = COLORS[momento]
         fig.add_trace(
             go.Scatterpolar(
@@ -82,6 +87,7 @@ def crear_grafico_radar(series_momentos, categorias, codigo):
                 name=momento.replace("_", " ").title(),
                 line_color=color["line"],
                 fillcolor=color["fill"],
+                legendrank=MOMENTOS_RADAR.index(momento),
             )
         )
 
