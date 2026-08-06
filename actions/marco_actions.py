@@ -8,6 +8,17 @@ from constants.marco_constants import COLORS, CSV_URL, MAPPING
 
 MOMENTOS_RADAR = ["pre_2023", "post_2023", "pre_2024", "post_2024", "post_2025", "nivel_2025"]
 
+NOMBRES_DIMENSIONES_RADAR = {
+    "Dimensión 1": "Liderazgo y visión",
+    "Dimensión 2": "Plan de área",
+    "Dimensión 3": "Enseñanza",
+    "Dimensión 4": "Dllo profesional",
+    "Dimensión 5": "EDI",
+    "Dimensión 6": "Ed. Terciaria",
+    "Dimensión 7": "Impacto",
+    "Dimensión 8": "Equidad de género",
+}
+
 
 def centrar_texto(texto, tipo="h1"):
     """Centrar headers, subheaders y textos en Streamlit."""
@@ -81,13 +92,17 @@ def crear_grafico_radar(series_momentos, categorias, codigo, momentos_selecciona
         key=lambda momento: series_momentos[momento].iloc[:-1].mean(),
         reverse=True,
     )
+    etiquetas_categorias = [
+        NOMBRES_DIMENSIONES_RADAR.get(categoria, categoria)
+        for categoria in categorias
+    ]
 
     for momento in orden_dibujo:
         color = COLORS[momento]
         fig.add_trace(
             go.Scatterpolar(
                 r=series_momentos[momento].values,
-                theta=categorias + [categorias[0]],
+                theta=etiquetas_categorias + [etiquetas_categorias[0]],
                 fill="toself",
                 connectgaps=True,
                 name=momento.replace("_", " ").title(),
