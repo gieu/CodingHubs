@@ -64,13 +64,18 @@ def obtener_datos_pretest_posttest(datos_codigo):
     return series, categorias
 
 
-def crear_grafico_radar(series_momentos, categorias, codigo):
+def crear_grafico_radar(series_momentos, categorias, codigo, momentos_seleccionados=None):
     """
     Crea un grafico de radar comparando los momentos disponibles.
     """
     fig = go.Figure()
 
-    momentos_disponibles = [momento for momento in MOMENTOS_RADAR if momento in series_momentos]
+    momentos_base = momentos_seleccionados or MOMENTOS_RADAR
+    momentos_disponibles = [
+        momento
+        for momento in MOMENTOS_RADAR
+        if momento in series_momentos and momento in momentos_base
+    ]
     orden_dibujo = sorted(
         momentos_disponibles,
         key=lambda momento: series_momentos[momento].iloc[:-1].mean(),
