@@ -35,6 +35,7 @@ COLORS = {
     "green": "#00A651",
     "orange": "#F39C12",
     "blue_dark": "#0D47A1",
+    "orange_dark": "#CC6600",
     "text_dark": "#2C3E50",
     "muted": "#E3F2FD",
 }
@@ -416,20 +417,36 @@ def q11_stacked_chart(df):
     if not cols_q11:
         return None
 
-    orden_escala = ["Totalmente en desacuerdo", "De acuerdo", "Totalmente de acuerdo"]
-    escala_lookup = {normalize_text(level): level for level in orden_escala}
+    orden_escala = [
+        "Totalmente en desacuerdo",
+        "En desacuerdo",
+        "Neutra",
+        "De acuerdo",
+        "Totalmente de acuerdo",
+    ]
+    escala_lookup = {
+        "totalmente en desacuerdo": "Totalmente en desacuerdo",
+        "en desacuerdo": "En desacuerdo",
+        "desacuerdo": "En desacuerdo",
+        "neutra": "Neutra",
+        "neutro": "Neutra",
+        "neutral": "Neutra",
+        "de acuerdo": "De acuerdo",
+        "acuerdo": "De acuerdo",
+        "totalmente de acuerdo": "Totalmente de acuerdo",
+    }
     ordered_items = [str(column) for column in cols_q11]
 
     records = []
     for column in cols_q11:
         item = str(column)
         normalized = df[column].map(normalize_text)
-        valid = normalized[normalized.isin(escala_lookup.keys())]
+        mapped = normalized.map(escala_lookup)
+        valid = mapped.dropna()
         denominator = int(valid.shape[0])
         counts = valid.value_counts()
         for level in orden_escala:
-            key = normalize_text(level)
-            count = int(counts.get(key, 0))
+            count = int(counts.get(level, 0))
             percentage = (count / denominator * 100) if denominator else 0
             records.append(
                 {
@@ -450,7 +467,9 @@ def q11_stacked_chart(df):
         orientation="h",
         category_orders={"Nivel": orden_escala, "Item": list(reversed(ordered_items))},
         color_discrete_map={
-            "Totalmente en desacuerdo": COLORS["orange"],
+            "Totalmente en desacuerdo": COLORS["orange_dark"],
+            "En desacuerdo": COLORS["orange"],
+            "Neutra": COLORS["blue_dark"],
             "De acuerdo": COLORS["blue"],
             "Totalmente de acuerdo": COLORS["green"],
         },
@@ -494,8 +513,8 @@ def q20_stacked_chart(df):
     if not cols_q20:
         return None
 
-    # Orden solicitado por el usuario.
-    orden_escala = ["Dificil", "Facil", "Moderada", "Muy Facil", "Muy dificil", "No aplica"]
+    # Orden semantico: de menor a mayor dificultad; "No aplica" queda al final.
+    orden_escala = ["Muy Facil", "Facil", "Moderada", "Dificil", "Muy dificil", "No aplica"]
     escala_aliases = {
         "dificil": "Dificil",
         "difícil": "Dificil",
@@ -508,11 +527,16 @@ def q20_stacked_chart(df):
         "muy difícil": "Muy dificil",
         "no aplica": "No aplica",
     }
-    ordered_items = [str(column) for column in cols_q20]
+    item_labels = {
+        "Q20_1": "Del escenario 2 al 3",
+        "Q20_2": "Del escenario 3 al 4",
+        "Q20_3": "Del escenario 4 al 5",
+    }
+    ordered_items = [item_labels.get(str(column), str(column)) for column in cols_q20]
 
     records = []
     for column in cols_q20:
-        item = str(column)
+        item = item_labels.get(str(column), str(column))
         normalized = df[column].map(normalize_text)
         mapped = normalized.map(escala_aliases)
         valid = mapped.dropna()
@@ -534,24 +558,25 @@ def q20_stacked_chart(df):
     chart_df = pd.DataFrame(records)
     fig = px.bar(
         chart_df,
-        x="Item",
-        y="Porcentaje",
+        x="Porcentaje",
+        y="Item",
         color="Nivel",
+        orientation="h",
         category_orders={"Nivel": orden_escala, "Item": ordered_items},
         color_discrete_map={
-            "Dificil": "#D32F2F",
-            "Muy dificil": "#8E24AA",
-            "Moderada": COLORS["orange"],
+            "Dificil": COLORS["orange"],
+            "Muy dificil": COLORS["orange_dark"],
+            "Moderada": COLORS["blue_dark"],
             "Facil": COLORS["blue"],
             "Muy Facil": COLORS["green"],
-            "No aplica": "#90A4AE",
+            "No aplica": COLORS["muted"],
         },
         custom_data=["n", "denominador"],
         title="Q20: ¿Qué tan difícil fue la transición entre un escenario y el siguiente?",
     )
     fig.update_layout(barmode="stack", legend_title_text="")
     fig.update_traces(
-        hovertemplate="%{x}<br>%{fullData.name}: %{y:.1f}% (n=%{customdata[0]}/%{customdata[1]})<extra></extra>",
+        hovertemplate="%{y}<br>%{fullData.name}: %{x:.1f}% (n=%{customdata[0]}/%{customdata[1]})<extra></extra>",
     )
     pivot_q20 = (
         chart_df.pivot(index="Item", columns="Nivel", values="Porcentaje")
@@ -565,8 +590,8 @@ def q20_stacked_chart(df):
             if value <= 0:
                 continue
             fig.add_annotation(
-                x=item,
-                y=accumulated + value / 2,
+                x=accumulated + value / 2,
+                y=item,
                 text=f"{value:.1f}%",
                 showarrow=False,
                 font=dict(size=10, color=COLORS["text_dark"]),
@@ -576,8 +601,8 @@ def q20_stacked_chart(df):
                 borderpad=2,
             )
             accumulated += value
-    fig.update_xaxes(title="Items")
-    fig.update_yaxes(title="Porcentaje de docentes según nivel marcado", ticksuffix="%", range=[0, 100])
+    fig.update_xaxes(title="Porcentaje de docentes según nivel marcado", ticksuffix="%", range=[0, 100])
+    fig.update_yaxes(title="Items", categoryorder="array", categoryarray=ordered_items, autorange="reversed")
     return style_figure(fig, height=460)
 
 
@@ -598,6 +623,8 @@ def q25_stacked_chart(df):
         "en desacuerdo": "En desacuerdo",
         "desacuerdo": "En desacuerdo",
         "neutro": "Neutro",
+        "neutra": "Neutro",
+        "neutral": "Neutro",
         "de acuerdo": "De acuerdo",
         "acuerdo": "De acuerdo",
         "totalmente de acuerdo": "Totalmente de acuerdo",
@@ -632,11 +659,11 @@ def q25_stacked_chart(df):
         y="Item",
         color="Nivel",
         orientation="h",
-        category_orders={"Nivel": orden_escala, "Item": ordered_items},
+        category_orders={"Nivel": orden_escala, "Item": list(reversed(ordered_items))},
         color_discrete_map={
-            "Totalmente en desacuerdo": "#D32F2F",
+            "Totalmente en desacuerdo": COLORS["orange_dark"],
             "En desacuerdo": COLORS["orange"],
-            "Neutro": "#90A4AE",
+            "Neutro": COLORS["blue_dark"],
             "De acuerdo": COLORS["blue"],
             "Totalmente de acuerdo": COLORS["green"],
         },
@@ -737,8 +764,13 @@ def q18_frequency_chart(df):
     for column in cols_q18:
         item = q18_label(column)
         count = int((marked_option(df[column]) & valid_mask).sum())
+        if count == 0:
+            continue
         percentage = count / denominator * 100
         records.append({"Item": item, "Porcentaje": percentage, "n": count})
+
+    if not records:
+        return None, pd.DataFrame(columns=["Respuesta reportada", "Docentes"])
 
     chart_df = pd.DataFrame(records).sort_values("Porcentaje", ascending=True)
     chart_df["Etiqueta"] = chart_df.apply(
