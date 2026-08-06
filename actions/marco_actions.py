@@ -47,7 +47,7 @@ def obtener_datos_pretest_posttest(datos_codigo):
         if datos_momento.empty:
             continue
 
-        valores = datos_momento.iloc[0, 2:]
+        valores = datos_momento.iloc[0, 2:].astype(str).str.strip()
         valores_numeric = valores.map(MAPPING)
         valores_numeric = pd.concat(
             [valores_numeric, pd.Series([valores_numeric.iloc[0]])],
@@ -84,6 +84,7 @@ def crear_grafico_radar(series_momentos, categorias, codigo):
                 r=series_momentos[momento].values,
                 theta=categorias + [categorias[0]],
                 fill="toself",
+                connectgaps=True,
                 name=momento.replace("_", " ").title(),
                 line_color=color["line"],
                 fillcolor=color["fill"],
