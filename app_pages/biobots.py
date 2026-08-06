@@ -702,6 +702,89 @@ def q25_stacked_chart(df):
     return style_figure(fig, height=max(430, len(ordered_items) * 46))
 
 
+Q29_LABELS = {
+    "Q29_1": "Lidero sesiones<br>de juego",
+    "Q29_2": "Identifico subhabilidades<br>de PC",
+    "Q29_3": "Integro conocimientos<br>matematicos",
+    "Q29_4": "Promuevo equidad<br>de genero",
+    "Q29_5": "Gestiono el aula<br>para implementar",
+}
+
+
+def q29_column_sort_key(column_name):
+    match = re.search(r"Q29_(\d+)$", str(column_name))
+    if match:
+        return int(match.group(1))
+    return 999
+
+
+def q29_vertical_chart(df):
+    cols_q29 = sorted(
+        [column for column in df.columns if str(column).startswith("Q29_")],
+        key=q29_column_sort_key,
+    )
+    if not cols_q29:
+        return None
+
+    orden_resultados = [
+        "Resultados mixtos",
+        "Aplicado con exito",
+    ]
+    resultado_aliases = {
+        "he intentado aplicar los conocimientos y habilidades adquiridos, pero he obtenido resultados mixtos (positivos y negativos) en esta area.": "Resultados mixtos",
+        "he aplicado con exito los conocimientos y habilidades adquiridos en esta area.": "Aplicado con exito",
+    }
+    ordered_items = [Q29_LABELS.get(str(column), str(column)) for column in cols_q29]
+
+    records = []
+    for column in cols_q29:
+        item = Q29_LABELS.get(str(column), str(column))
+        normalized = df[column].map(normalize_text)
+        mapped = normalized.map(resultado_aliases)
+        valid = mapped.dropna()
+        denominator = int(valid.shape[0])
+        counts = valid.value_counts()
+        for result in orden_resultados:
+            count = int(counts.get(result, 0))
+            percentage = (count / denominator * 100) if denominator else 0
+            records.append(
+                {
+                    "Item": item,
+                    "Resultado": result,
+                    "Porcentaje": percentage,
+                    "n": count,
+                    "denominador": denominator,
+                }
+            )
+
+    chart_df = pd.DataFrame(records)
+    fig = px.bar(
+        chart_df,
+        x="Item",
+        y="Porcentaje",
+        color="Resultado",
+        barmode="group",
+        text="Porcentaje",
+        category_orders={"Item": ordered_items, "Resultado": orden_resultados},
+        color_discrete_map={
+            "Resultados mixtos": COLORS["blue"],
+            "Aplicado con exito": COLORS["orange"],
+        },
+        custom_data=["n", "denominador"],
+        title="Q29: Aplicacion del aprendizaje en la practica docente",
+    )
+    fig.update_traces(
+        texttemplate="%{text:.1f}%",
+        textposition="outside",
+        cliponaxis=False,
+        hovertemplate="%{x}<br>%{fullData.name}: %{y:.1f}% (n=%{customdata[0]}/%{customdata[1]})<extra></extra>",
+    )
+    fig.update_xaxes(title="Areas de aplicacion", tickangle=0, automargin=True)
+    fig.update_yaxes(title="Porcentaje de docentes", ticksuffix="%", range=[0, 100])
+    fig.update_layout(legend_title_text="", margin=dict(b=110))
+    return style_figure(fig, height=520)
+
+
 def marked_option(series):
     normalized = series.map(normalize_text)
     numeric_marked = pd.to_numeric(series, errors="coerce").gt(0).fillna(False)
@@ -847,6 +930,7 @@ try:
     fig_q11 = q11_stacked_chart(perception_df)
     fig_q20 = q20_stacked_chart(perception_df)
     fig_q25 = q25_stacked_chart(perception_df)
+    fig_q29 = q29_vertical_chart(perception_df)
     fig_q18, q18_other_responses = q18_frequency_chart(perception_df)
 
     implemented_n = int(goals.iloc[0]["n"])
@@ -1030,14 +1114,18 @@ try:
     if fig_q25 is not None:
         plot(fig_q25, "biobots_q25_stacked")
     else:
-        st.info("No se encontraron columnas `Q25_1` a `Q25_7` para construir la gráfica Q25.")
+        st.info("No se encontraron columnas `Q25_1` a `Q25_7` para construir la grafica Q25.")
+    if fig_q29 is not None:
+        plot(fig_q29, "biobots_q29_vertical")
+    else:
+        st.info("No se encontraron columnas `Q29_*` en la fuente para construir la grafica Q29.")
 
     with st.expander("Definiciones y fuente"):
         st.markdown(
             "- **Implementación inicial:** reconocimiento del juego o frecuencia mayor que cero en cualquier escenario.\n"
             "- **Secuencia hasta escenario 3:** armado y programación del escenario 2, y escenario 3, todos con frecuencia mayor que cero.\n"
             "- **Grupo tratamiento:** 10 docentes definidos en el requerimiento. Cada línea usa su propio denominador.\n"
-            "- **Fuente:** `Seguimiento_Tutores_2026`, pestaña `Consolidado`; `BD. Seguimiento Manizales Docentes` (P4/P6); y hoja de encuesta (`gid=741262261`) para Q11, Q18, Q20 y Q25. Actualización en caché cada 5 minutos."
+            "- **Fuente:** `Seguimiento_Tutores_2026`, pestaña `Consolidado`; `BD. Seguimiento Manizales Docentes` (P4/P6); y hoja de encuesta (`gid=741262261`) para Q11, Q18, Q20, Q25 y Q29. Actualización en caché cada 5 minutos."
         )
 except Exception as exc:
     st.error("No fue posible cargar el consolidado de Biobots.")
