@@ -4,7 +4,7 @@ import plotly.express as px  # type: ignore
 import plotly.graph_objects as go  # type: ignore
 import streamlit as st
 from constants.marco_constants import COLORS, CSV_URL, MAPPING
-
+ 
 
 MOMENTOS_RADAR = ["pre_2023", "post_2023", "pre_2024", "post_2024", "post_2025", "nivel_2025"]
 
