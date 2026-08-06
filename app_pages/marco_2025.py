@@ -9,6 +9,7 @@ from actions.marco_actions import (
     crear_grafico_radar,
     grafica_estado,
     heatmap,
+    MOMENTOS_RADAR,
     obtener_datos_pretest_posttest,
     obtener_opciones_codigos,
     centrar_texto,
@@ -235,8 +236,13 @@ with tab1:
         "Seleccione los códigos de IE que desea visualizar la comparativa de Pretest y Posttest",
         opciones_codigos_IE,
     )
+    momentos_seleccionados = st.multiselect(
+        "Seleccione los momentos que desea graficar",
+        MOMENTOS_RADAR,
+        default=MOMENTOS_RADAR,
+    )
 
-    if codigos_selececionados:
+    if codigos_selececionados and momentos_seleccionados:
         # Obtener los datos de Pretest y Posttest selecionados
         df_seleccionados = df[df["Código IE"].isin(codigos_selececionados)]
         
@@ -247,12 +253,19 @@ with tab1:
             series_momentos, categorias = obtener_datos_pretest_posttest(datos_codigo)
 
             if series_momentos is not None and categorias is not None:
-                fig = crear_grafico_radar(series_momentos, categorias, codigo)
+                fig = crear_grafico_radar(
+                    series_momentos,
+                    categorias,
+                    codigo,
+                    momentos_seleccionados,
+                )
                 st.plotly_chart(fig)
             else:
                 st.write(
                     f"No hay momentos disponibles para generar el grÃ¡fico de {codigo}."
                 )
+    elif codigos_selececionados:
+        st.write("Seleccione al menos un momento para generar el gráfico.")
     else:
         st.write(
             "Por favor, seleccione al menos un código de IE para generar el gráfico."
