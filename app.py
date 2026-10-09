@@ -32,6 +32,12 @@ def main():
                 title="Encuentros Colaborativos",
                 icon="🤝",
                 url_path="/encuentros_colaborativos"
+            ),
+            st.Page(
+                page="app_pages/encuentros_colaborativos_2026.py",
+                title="Encuentros Colaborativos 2026",
+                icon="🤝",
+                url_path="/encuentros_colaborativos_2026"
             )
         ],
         "Observaciones de Aula": [

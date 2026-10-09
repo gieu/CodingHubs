@@ -41,6 +41,7 @@ NAVBAR_TEMPLATE = """
             <div class="dropdown-content">
                 <a href="{BASE_URL}pares" target="_self">Pares Expertos</a>
                 <a href="{BASE_URL}encuentros_colaborativos" target="_self">Encuentros Colaborativos</a>
+                <a href="{BASE_URL}encuentros_colaborativos_2026" target="_self">Encuentros Colaborativos 2026</a>
                 <a href="{BASE_URL}observaciones" target="_self">Observaciones 2025</a>
                 <a href="{BASE_URL}observaciones_2026" target="_self">Observaciones 2026</a>
                 <a href="{BASE_URL}marco_2025" target="_self">Marco de Calidad 2025</a>
