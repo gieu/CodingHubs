@@ -44,6 +44,8 @@ def load_data(file):
     return df
 
 df = load_data(CONSOLIDADO_URL)
+manizales_2023 = df["codigo_ie"].str.endswith("Instituto Manizales") & df["Momento"].isin(("pre_2023", "post_2023"))
+df.loc[manizales_2023, df.columns[2:]] = df.loc[manizales_2023, df.columns[2:]].replace("3", "3B")
 dimension_1_df = load_data(DIMENSION_1_URL)
 dimension_2_df = load_data(DIMENSION_2_URL)
 dimension_3_df = load_data(DIMENSION_3_URL)
@@ -230,8 +232,8 @@ with tab1:
     st.markdown("---")
     st.write(TEXTO)
 
-    df = df.rename(columns={'codigo_ie': 'Código IE'})
-    opciones_codigos_IE = obtener_opciones_codigos(df)
+    df_radar = df.rename(columns={'codigo_ie': 'Código IE'})
+    opciones_codigos_IE = obtener_opciones_codigos(df_radar)
     codigos_selececionados = st.multiselect(
         "Seleccione los códigos de IE que desea visualizar la comparativa de Pretest y Posttest",
         opciones_codigos_IE,
@@ -244,7 +246,7 @@ with tab1:
 
     if codigos_selececionados and momentos_seleccionados:
         # Obtener los datos de Pretest y Posttest selecionados
-        df_seleccionados = df[df["Código IE"].isin(codigos_selececionados)]
+        df_seleccionados = df_radar[df_radar["Código IE"].isin(codigos_selececionados)]
         
 
         for codigo in codigos_selececionados:
@@ -286,10 +288,20 @@ with tab2:
 
         with st.expander("Análisis de dimensión: " + dimension, expanded=False):
             dim_number = dimension.split('.')[0]
+            dim_values = df.pivot(
+                index="codigo_ie",
+                columns="Momento",
+                values=df.columns[int(dim_number) + 1],
+            )
+            for momento in ("pre_2023", "post_2023"):
+                column = f"dim{dim_number}_{momento}"
+                dim_df[column] = dim_df["codigo_ie"].map(dim_values[momento])
 
             fig = barras_pretest_postest(
                 dim_df,
                 value_cols={
+                    f"dim{dim_number}_pre_2023": "Pretest 2023",
+                    f"dim{dim_number}_post_2023": "Postest 2023",
                     f"dim{dim_number}_pre_2024": "Pretest 2024",
                     f"dim{dim_number}_post_2024": "Postest 2024",
                     f"dim{dim_number}_post_2025": "Postest 2025",
