@@ -4,6 +4,7 @@ import streamlit as st
 from actions.observaciones_2026_actions import (
     instantaneas,
     observaciones_generales,
+    observaciones_stem,
     observaciones_ti,
 )
 from constants.footer_constants import FOOTER_HTML, IMAGENES_BASE64
@@ -74,6 +75,8 @@ def mostrar_observaciones(df_instantaneas, df_generales, especialidad=None):
         observaciones_generales(df_generales.copy())
         if especialidad == "TI":
             observaciones_ti(df_generales.copy())
+        elif especialidad == "STEM":
+            observaciones_stem(df_generales.copy())
         mostrar_datos(df_generales, "Ver datos generales")
     else:
         st.info("No hay observaciones generales disponibles para esta selección.")
