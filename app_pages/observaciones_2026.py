@@ -25,10 +25,10 @@ st.title(f"Observaciones de aula {OBSERVACIONES_YEAR}")
 st.caption(f"Seguimiento de las observaciones de aula de la vigencia {OBSERVACIONES_YEAR}")
 
 
-CSV_URL_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQcfm9v6gG5wBoIhmIaFYlmH3lN-n1xTIs9NqYY9D_ynMIAWB-4qZMoFA43cogaZHLsZwhLcyBmyU-j/pub?gid=719223759&single=true&output=csv"
-CSV_URL_2 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTU9IGnFp4vidgKKcvMj8dJfkTHQkDMvkswo1O7wvcTZb9dGT41iDaXAPBFBtVpr2oP-xeLh1IkYXM8/pub?gid=884233825&single=true&output=csv"
-CSV_URL_3 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlTUaCvb5Nmsd7m4IvXfBghCP_7si-VwrjtkubfrrWLN6PsWfGDMdBX91uCP8e9kh0ASntvU79U7_3/pub?gid=2039031145&single=true&output=csv"
-CSV_URL_4 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbReSZM6d4dLqOk_N5_h-8xXcvW55-6OY2iRt9cT2jTvt3jokCo7Ja5sibEDlYZSKywrc9WgSxl5ad/pub?output=csv"
+CSV_URL_1 = "https://drive.google.com/uc?export=download&id=1NO00Sn_u7u1ZvbxH8NJJWJbM62wW2van"
+CSV_URL_2 = "https://drive.google.com/uc?export=download&id=1Axm71mmdSWBdf4awGQMvUiS27LaID7R5"
+CSV_URL_3 = "https://drive.google.com/uc?export=download&id=1KFltx8d2ID6xYTNgDEK8UmWcUO9MIClu"
+CSV_URL_4 = "https://drive.google.com/uc?export=download&id=196p-Pi0D830M5lGbj-KZWka6XUdBGDto"
 
 
 # --- Cargar Datos con Cache ---
@@ -37,6 +37,8 @@ def load_data(file):
     try:
         df = pd.read_csv(file)
         df.columns = df.columns.str.strip()
+        if "momento" in df:
+            df = df[df["momento"].astype("string").str.startswith(str(OBSERVACIONES_YEAR), na=False)]
         return df
     except Exception:
         st.warning("No se pudo cargar una fuente de observaciones. Los demás datos siguen disponibles.")
@@ -53,8 +55,10 @@ df_stem_generales = load_data(CSV_URL_4)
 def mostrar_datos(df, titulo):
     # Hide identifying and collection metadata only in the displayed table.
     columnas_ocultas = [
-        "nombre_docente", "correo_docente", "email", "ip", "direccion_ip",
-        "tipo_respuesta", "progreso", "finalizado", "idioma",
+        "nombre_docente", "nombre_docente_estandarizado", "mentor", "correo_docente", "email",
+        "doc_docente", "Código", "Codigo", "codigo", "colegio", "id", "id_respuesta", "match",
+        "ip", "direccion_ip", "latitud", "longitud", "fecha_inicio", "fecha_fin",
+        "fecha_acomp", "fecha_registro", "tipo_respuesta", "progreso", "finalizado", "idioma",
     ]
     with st.expander(titulo):
         st.dataframe(df.drop(columns=columnas_ocultas, errors="ignore"), width="stretch")
