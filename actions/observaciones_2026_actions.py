@@ -144,6 +144,8 @@ def _categorical_rows(df, column):
         return pd.DataFrame(columns=["momento", "categoria", "porcentaje", "cantidad", "total"])
     clean = df.copy()
     clean[column] = clean[column].astype("string").str.strip().fillna("Sin dato").replace("", "Sin dato")
+    if column == "grado":
+        clean[column] = clean[column].str.replace("º", "°", regex=False)
     rows = clean.groupby(["momento", column], observed=True).size().reset_index(name="cantidad")
     categories = clean[column].drop_duplicates().tolist()
     totals = clean.groupby("momento").size()
