@@ -600,7 +600,7 @@ def graficar_burbujas_instantaneas_por_momento(df_inst_unicas, df_acciones):
         st.plotly_chart(
             fig,
             use_container_width=True,
-            config={**chart_config, 'editable': False}
+            config=chart_config
         )
         graficas_renderizadas += 1
 

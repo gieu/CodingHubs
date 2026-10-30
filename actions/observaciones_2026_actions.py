@@ -13,7 +13,7 @@ from plotly.colors import qualitative, sequential
 from utils.chart_config import get_chart_config
 
 
-chart_config = {**get_chart_config(), "editable": False, "displaylogo": False}
+chart_config = {**get_chart_config(), "displaylogo": False}
 MOMENT_COLORS = {"Pretest": "#636EFA", "Postest": "#EF553B"}
 PRACTICE_COLORS = {"Pretest": "cornflowerblue", "Postest": "orchid"}
 INSTANT = "Número de instantánea"
@@ -73,14 +73,14 @@ def _wrap(text, width=40):
     return "<br>".join(textwrap.wrap(str(text), width=width))
 
 
-def _show(fig):
+def _show(fig, margin=None):
     # Construir las trazas con listas evita arrays binarios incompatibles con
     # algunas versiones del frontend Streamlit y conserva los números reales.
     fig.update_layout(
         template="plotly_white", font=dict(color="#282255", size=13),
         title=dict(x=0, font=dict(size=17)),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
-        margin=dict(l=25, r=35, t=125, b=55),
+        margin=margin or dict(l=25, r=35, t=125, b=55),
     )
     st.plotly_chart(fig, config=chart_config, width="stretch", key=str(uuid4()))
 
@@ -247,17 +247,17 @@ def instantaneas(instantaneas):
 
 
 GENERAL_PRACTICES = {
-    "objetivos_aprend": "Inicio: objetivos de aprendizaje",
-    "conoc_previos": "Inicio: conocimientos previos",
-    "conceptos_clave": "Inicio: conceptos clave",
-    "vocabulario_comp": "Desarrollo: vocabulario adecuado",
-    "conexion_vida": "Desarrollo: conexión con la vida diaria",
-    "prep_material": "Desarrollo: preparación de materiales",
-    "gestion_material": "Desarrollo: gestión de materiales",
-    "valoracion_esfuerzo": "Desarrollo: valoración del esfuerzo",
-    "apoyo_estudiantes": "Desarrollo: apoyo a estudiantes",
-    "uso_grafico_anclaje": "Cierre: gráfico de anclaje",
-    "metacognicion": "Cierre: metacognición y reflexión",
+    "objetivos_aprend": "Inicio de clase: Objetivos de Aprendizaje",
+    "conoc_previos": "Inicio de clase: Conocimientos Previos",
+    "conceptos_clave": "Inicio de clase: Conceptos Clave",
+    "vocabulario_comp": "Desarrollo de clase: Vocabulario adecuado",
+    "conexion_vida": "Desarrollo de clase: Conexión con la vida diaria",
+    "prep_material": "Desarrollo de clase: Preparación de materiales",
+    "gestion_material": "Desarrollo de clase: Gestión de materiales",
+    "valoracion_esfuerzo": "Desarrollo de clase: Valoración del esfuerzo",
+    "apoyo_estudiantes": "Desarrollo de clase: Apoyo a estudiantes",
+    "uso_grafico_anclaje": "Cierre de clase: Gráfico de anclaje",
+    "metacognicion": "Cierre de clase: Metacognición y reflexión",
 }
 
 
@@ -267,19 +267,23 @@ def _practice_comparison(rows):
         st.info("No hay respuestas de prácticas para comparar.")
         return
     categories = rows["categoria"].drop_duplicates().tolist()
+    groups = {category: category.split(": ", 1)[0] for category in categories}
+    labels = {category: category.split(": ", 1)[1] for category in categories}
     moments = _moments(rows)
     fig = go.Figure()
     for category in categories:
         part = rows[rows["categoria"] == category]
         if {"Pretest", "Postest"}.issubset(set(part["momento"])):
             values = part.set_index("momento").loc[["Pretest", "Postest"], "porcentaje"].tolist()
-            fig.add_trace(go.Scatter(x=values, y=[_wrap(category)] * 2,
+            fig.add_trace(go.Scatter(x=values, y=[[groups[category]] * 2, [_wrap(labels[category])] * 2],
                                     mode="lines", line=dict(color="lightgray", width=2),
                                     showlegend=False, hoverinfo="skip"))
     for moment in moments:
         part = rows[rows["momento"] == moment]
+        part_categories = part["categoria"].tolist()
         fig.add_trace(go.Scatter(
-            x=part["porcentaje"].tolist(), y=[_wrap(v) for v in part["categoria"]],
+            x=part["porcentaje"].tolist(),
+            y=[[groups[c] for c in part_categories], [_wrap(labels[c]) for c in part_categories]],
             mode="markers+text", name=moment,
             marker=dict(color=PRACTICE_COLORS.get(moment, "#636EFA"),
                         size=17 if moment == "Pretest" else 10,
@@ -288,15 +292,15 @@ def _practice_comparison(rows):
             text=[f"{v:.1f}%" for v in part["porcentaje"]],
             textposition="top left" if moment == "Pretest" else "bottom right",
             cliponaxis=False,
-            customdata=part[["cantidad", "total"]].values.tolist(),
-            hovertemplate="%{y}<br>%{x:.1f}%<br>Respuestas Sí: %{customdata[0]} de %{customdata[1]}<extra>%{fullData.name}</extra>",
+            customdata=part[["cantidad", "total"]].assign(categoria=part_categories).values.tolist(),
+            hovertemplate="%{customdata[2]}<br>%{x:.1f}%<br>Respuestas Sí: %{customdata[0]} de %{customdata[1]}<extra>%{fullData.name}</extra>",
         ))
     fig.update_layout(title="Porcentaje de observaciones con respuesta Sí en cada práctica",
                       height=max(600, len(categories) * 48 + 200))
     fig.update_xaxes(range=[-5, 112], ticksuffix="%", title="Porcentaje de respuestas válidas")
-    fig.update_yaxes(categoryorder="array", categoryarray=[_wrap(c) for c in categories],
+    fig.update_yaxes(gridcolor="lightgray", gridwidth=1, showgrid=True,
                      autorange="reversed", title=None)
-    _show(fig)
+    _show(fig, margin=dict(l=300, r=35, t=125, b=55))
 
 
 def observaciones_generales(obs_generales):
@@ -331,25 +335,37 @@ def observaciones_generales(obs_generales):
         if grades.empty:
             st.info("No hay observaciones con uso de guía y ambos grados registrados.")
         else:
-            # Con muestras pequeñas una caja colapsa y oculta los datos; puntos
-            # de tamaño proporcional permiten ver también los pares repetidos.
-            st.caption(f"{len(grades)} observaciones con guía y ambos grados registrados. Círculo: Pretest; rombo: Postest. El tamaño indica cuántas observaciones coinciden.")
+            st.caption(f"{len(grades)} observaciones con guía y ambos grados registrados. El número y el tamaño de cada punto indican cuántas observaciones tiene ese par; la diagonal marca grados iguales. Por encima, la guía indica un grado mayor que el observado; por debajo, uno menor.")
             counts = grades.groupby(["momento", "grado", "grado_guia"]).size().reset_index(name="cantidad")
             fig = go.Figure()
+            axis_min, axis_max = -0.5, 11.5
+            fig.add_trace(go.Scatter(
+                x=[0, 11], y=[0, 11], mode="lines",
+                name="Mismo grado", line=dict(color="#8D8D96", dash="dash", width=1.5),
+                hoverinfo="skip",
+            ))
             for i, moment in enumerate(_moments(counts)):
                 part = counts[counts["momento"] == moment]
                 fig.add_trace(go.Scatter(
-                    x=part["grado"].tolist(), y=part["grado_guia"].tolist(), mode="markers",
+                    x=part["grado"].tolist(), y=part["grado_guia"].tolist(), mode="markers+text",
                     name=moment, marker=dict(color=MOMENT_COLORS.get(moment, qualitative.Plotly[i % 10]),
                                             size=(part["cantidad"] * 5 + (24 if moment == "Pretest" else 12)).tolist(),
-                                            symbol="circle-open" if moment == "Pretest" else "diamond",
+                                            symbol={"Pretest": "circle-open", "Postest": "diamond"}.get(moment, "circle"),
                                             line=dict(width=2), opacity=0.9),
+                    text=part["cantidad"].astype(str).tolist(),
+                    textposition=["bottom center" if grade == 11 else "top center"
+                                  for grade in part["grado_guia"]],
                     customdata=part["cantidad"].tolist(),
                     hovertemplate="Grado observado %{x}<br>Grado de guía %{y}<br>Observaciones: %{customdata}<extra>%{fullData.name}</extra>"))
-            fig.update_layout(title="Grado observado vs grado de guía", height=420)
-            fig.update_xaxes(title="Grado observado", dtick=1)
-            fig.update_yaxes(title="Grado de guía", dtick=1)
-            _show(fig)
+            fig.update_layout(title="Grado observado vs grado de guía", height=620)
+            grade_ticks = list(range(12))
+            fig.update_xaxes(title="Grado observado", tickmode="array", tickvals=grade_ticks,
+                             range=[axis_min, axis_max])
+            fig.update_yaxes(title="Grado de guía", tickmode="array", tickvals=grade_ticks,
+                             range=[axis_min, axis_max])
+            _, chart_column, _ = st.columns([1, 3, 1])
+            with chart_column:
+                _show(fig)
     else:
         _missing("Comparación de grados", [c for c in ["grado", "grado_guia"] if c not in users])
 
