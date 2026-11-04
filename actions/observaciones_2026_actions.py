@@ -9,6 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 from plotly.colors import qualitative, sequential
+from plotly.subplots import make_subplots
 
 from utils.chart_config import get_chart_config
 
@@ -73,13 +74,13 @@ def _wrap(text, width=40):
     return "<br>".join(textwrap.wrap(str(text), width=width))
 
 
-def _show(fig, margin=None):
+def _show(fig, margin=None, legend=None):
     # Construir las trazas con listas evita arrays binarios incompatibles con
     # algunas versiones del frontend Streamlit y conserva los números reales.
     fig.update_layout(
         template="plotly_white", font=dict(color="#282255", size=13),
         title=dict(x=0, font=dict(size=17)),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+        legend=legend or dict(orientation="h", yanchor="bottom", y=1.02, x=0),
         margin=margin or dict(l=25, r=35, t=125, b=55),
     )
     st.plotly_chart(fig, config=chart_config, width="stretch", key=str(uuid4()))
@@ -203,22 +204,46 @@ def instantaneas(instantaneas):
         palette = {c: qualitative.Plotly[i % 10]
                    for i, c in enumerate(c for c in categories if c != "Sin dato")}
         palette["Sin dato"] = "#8D8D96"
-        for moment in _moments(clean):
+        moments = _moments(clean)
+        columns = min(3, len(moments))
+        rows = (len(moments) + columns - 1) // columns
+        fig = make_subplots(
+            rows=rows, cols=columns, shared_yaxes=True, shared_xaxes=True,
+            subplot_titles=moments, horizontal_spacing=0.06, vertical_spacing=0.14,
+        )
+        shown_categories = set()
+        for index, moment in enumerate(moments):
+            row, col = divmod(index, columns)
+            row += 1
+            col += 1
             part = clean[clean["momento"] == moment]
             numbers = sorted(part[INSTANT].unique().tolist())
             totals = part.groupby(INSTANT).size()
             counts = part.groupby([INSTANT, "accion_docente_cat"]).size()
-            fig = go.Figure()
             for category in categories:
                 values = [100 * counts.get((number, category), 0) / totals[number] for number in numbers]
-                fig.add_trace(go.Scatter(x=numbers, y=values, mode="lines+markers", name=category,
-                                         line=dict(color=palette[category]),
-                                         customdata=[[int(counts.get((n, category), 0)), int(totals[n])] for n in numbers],
-                                         hovertemplate="Instantánea %{x}<br>%{y:.1f}%<br>Observaciones: %{customdata[0]} de %{customdata[1]}<extra>%{fullData.name}</extra>"))
-            fig.update_layout(title=f"Distribución porcentual de observaciones — {moment}", height=500)
-            fig.update_yaxes(range=[0, 105], title="Porcentaje (%)")
-            fig.update_xaxes(tickmode="array", tickvals=numbers, title="Instantánea")
-            _show(fig)
+                fig.add_trace(
+                    go.Scatter(
+                        x=numbers, y=values, mode="lines+markers", name=category,
+                        showlegend=category not in shown_categories,
+                        line=dict(color=palette[category]),
+                        customdata=[[int(counts.get((n, category), 0)), int(totals[n])] for n in numbers],
+                        hovertemplate="Instantánea %{x}<br>%{y:.1f}%<br>Observaciones: %{customdata[0]} de %{customdata[1]}<extra>%{fullData.name}</extra>",
+                    ),
+                    row=row, col=col,
+                )
+                shown_categories.add(category)
+            fig.update_xaxes(tickmode="array", tickvals=numbers, title="Instantánea", row=row, col=col)
+            fig.update_yaxes(range=[0, 105], title="Porcentaje (%)" if col == 1 else None, row=row, col=col)
+        fig.update_layout(
+            title="Distribución porcentual de observaciones por momento",
+            height=max(420, rows * 290 + 120),
+        )
+        _show(
+            fig,
+            margin=dict(l=45, r=220, t=80, b=45),
+            legend=dict(orientation="v", x=1.02, y=1, title="Observación"),
+        )
     else:
         _missing("Distribución porcentual", ["accion_docente_cat"])
 
