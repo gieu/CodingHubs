@@ -16,7 +16,12 @@ from utils.chart_config import get_chart_config
 
 chart_config = {**get_chart_config(), "displaylogo": False}
 MOMENT_COLORS = {"Pretest": "#636EFA", "Postest": "#EF553B"}
-PRACTICE_COLORS = {"Pretest": "cornflowerblue", "Postest": "orchid"}
+PRACTICE_COLORS = {
+    "Pretest": "cornflowerblue", "Postest": "orchid",
+    "2024_1": qualitative.Plotly[0], "2024_2": qualitative.Plotly[1],
+    "2025_1": qualitative.Plotly[2], "2025_2": qualitative.Plotly[3],
+    "2026_1": qualitative.Plotly[4],
+}
 INSTANT = "Número de instantánea"
 
 
@@ -65,9 +70,11 @@ def _prepare(source):
 
 def _moments(df):
     values = df["momento"].drop_duplicates().tolist()
-    return [m for m in ["Pretest", "Postest"] if m in values] + [
-        m for m in values if m not in {"Pretest", "Postest"}
-    ]
+    historical = [m for m in values if re.fullmatch(r"\d{4}_\d+", str(m))]
+    other = [m for m in values if m not in {"Pretest", "Postest"} and m not in historical]
+    return [m for m in ["Pretest", "Postest"] if m in values] + sorted(
+        historical, key=lambda moment: tuple(map(int, moment.split("_")))
+    ) + other
 
 
 def _wrap(text, width=40):
@@ -355,7 +362,7 @@ def observaciones_generales(obs_generales):
 
     st.subheader("Grado observado vs Grado de guía")
     if all(c in users for c in ["grado", "grado_guia"]):
-        grades = users.copy()
+        grades = users[users["momento"].astype("string").str.startswith("2026", na=False)].copy()
         for col in ["grado", "grado_guia"]:
             grades[col] = pd.to_numeric(grades[col].astype("string").str.extract(r"(\d+)", expand=False), errors="coerce")
         grades = grades.dropna(subset=["grado", "grado_guia"])
@@ -498,6 +505,16 @@ def observaciones_stem(obs_generales):
     if complete.empty:
         st.info("No hay respuestas válidas de subhabilidades y Weintrop para graficar.")
         return
+    total_by_moment = df.groupby("momento").size()
+    valid_by_moment = complete.groupby("momento").size()
+    completeness = "; ".join(
+        f"{moment}: {int(valid_by_moment.get(moment, 0))}/{int(total_by_moment.get(moment, 0))}"
+        for moment in _moments(df)
+    )
+    st.caption(f"Respuestas completas de subhabilidades y Weintrop por momento: {completeness}.")
+    without_data = [moment for moment in _moments(df) if valid_by_moment.get(moment, 0) == 0]
+    if without_data:
+        st.info(f"Sin datos válidos de subhabilidades y Weintrop en: {', '.join(without_data)}.")
     weintrop = flags.fillna(False).any(axis=1)
     complete["tipo_practica"] = [
         "Ambas" if sub[i] and weintrop[i] else "Solo subhabilidades" if sub[i] else "Solo Weintrop" if weintrop[i] else "Ninguna"
