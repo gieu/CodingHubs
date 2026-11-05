@@ -54,12 +54,12 @@ def main():
                 url_path="/observaciones_2026"
             )
         ],
-        "Marco de calidad 2025": [
+        "Marco de calidad": [
             st.Page(
-                page="app_pages/marco_2025.py",
-                title="Marco de calidad 2025",
+                page="app_pages/marco.py",
+                title="Marco de calidad",
                 icon="📊",
-                url_path="/marco_2025"
+                url_path="/marco"
             )
         ],
         "Análisis de Masters": [
