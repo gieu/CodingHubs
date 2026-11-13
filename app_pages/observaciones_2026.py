@@ -125,12 +125,12 @@ def mostrar_datos(df, titulo):
 
 def mostrar_observaciones(df_instantaneas, df_generales, especialidad=None):
     if not df_instantaneas.empty:
-        instantaneas(df_instantaneas.copy())
+        instantaneas(df_instantaneas.copy(), df_generales.copy())
         mostrar_datos(df_instantaneas, "Ver datos de instantáneas")
     else:
         st.info("No hay datos de instantáneas disponibles para esta selección.")
     if not df_generales.empty:
-        observaciones_generales(df_generales.copy())
+        observaciones_generales(df_generales.copy(), momentos_practicas=("2024_1", "2026_1"))
         if especialidad == "TI":
             observaciones_ti(df_generales.copy())
         elif especialidad == "STEM":
