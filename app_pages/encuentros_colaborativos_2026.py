@@ -9,6 +9,7 @@ from constants.header_constants import LOGO_NAVBAR_BASE64, HIDE_STREAMLIT_STYLE,
 from utils.chart_config import get_chart_config
 from constants.header_constants import header
 import actions.utils as utils
+from actions.graficas_jesus_actions import graficas_jesus
 import os
 # ==========================================
 # CONFIGURACIÓN INICIAL
@@ -2501,6 +2502,42 @@ def momentos():
     else:
         st.warning("No hay datos válidos en el tercer conjunto de datos.")
     
+# Renombrado de columnas de instantáneas (compartido por Instantáneas y Gráficas Jesús)
+RENAME_INSTANTANEAS = {
+    'Fecha de inicio': 'fechaInicio',
+    'Fecha de finalización': 'fechaFin',
+    'Tipo de respuesta': 'tipoRespuesta',
+    'Dirección IP': 'ip',
+    'Progreso': 'progreso',
+    'Finalizado': 'finalizado',
+    'Fecha registrada': 'fechaRegistro',
+    'Encuentro': 'Encuentro',
+    'ID de respuesta': 'idRespuesta',
+    'Antes de finalizar el registro de instantáneas, por favor confirma algunos datos: - Nombre del/la observador(a)': 'nombreObservador',
+    'Antes de finalizar el registro de instantáneas, por favor confirma algunos datos: - Correo electrónico': 'correoObservador',
+    'IDEncuentro': 'idEncuentro',
+    'accion momento': 'accionMomento',
+    'accion momento - otra': 'accionMomentoOtra',
+    '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - Pares expertos': 'participaPares',
+    '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - Docentes acompañados': 'participaDocentes',
+    '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - Mentores': 'participaMentores',
+    '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - No aplica': 'participaNA',
+    '¿Quiénes participan activamente en la conversación o actividad en este momento? Si no está ocurriendo una conversación o actividad en este momento, selecciona "No aplica" - antiguo': 'participantesAntiguo',
+    '¿Quiénes participan activamente en la conversación o actividad en este momento? Si no está ocurriendo una conversación o actividad en este momento, selecciona "No aplica" -': 'participantes',
+    'Quien dirige': 'quienDirige',
+    'Registre cualquier comentario para comprender lo sucedido en esta instantánea': 'comentario',
+    'Número de instantánea': 'numInstantanea'
+}
+
+
+def graficas_jesus_tab():
+    """Carga las instantáneas (sin filtros) y delega las gráficas al módulo de Jesús"""
+    url_instantaneas = "https://docs.google.com/spreadsheets/d/1dU6-Hb5MW252A_PF3iaOqhX95W1tXF1J5BWrCIhD_u8/export?format=csv&gid=134781920"
+    df = load_data(url_instantaneas)
+    df = df.rename(columns={k: v for k, v in RENAME_INSTANTANEAS.items() if k in df.columns})
+    graficas_jesus(df)
+
+
 def instantaneas():
     """Dashboard de métricas instantáneas"""
     st.markdown("---")
@@ -2511,35 +2548,9 @@ def instantaneas():
     # Cargar datos
     df_inst = load_data(url_instantaneas)
     df_inst, _ = seleccionar_fase_actual(df_inst, 'fase_instantaneas_2026')
-    # Renombrar columnas según el diccionario proporcionado
-    rename_dict = {
-        'Fecha de inicio': 'fechaInicio',
-        'Fecha de finalización': 'fechaFin',
-        'Tipo de respuesta': 'tipoRespuesta',
-        'Dirección IP': 'ip',
-        'Progreso': 'progreso',
-        'Finalizado': 'finalizado',
-        'Fecha registrada': 'fechaRegistro',
-        'Encuentro': 'Encuentro',
-        'ID de respuesta': 'idRespuesta',
-        'Antes de finalizar el registro de instantáneas, por favor confirma algunos datos: - Nombre del/la observador(a)': 'nombreObservador',
-        'Antes de finalizar el registro de instantáneas, por favor confirma algunos datos: - Correo electrónico': 'correoObservador',
-        'IDEncuentro': 'idEncuentro',
-        'accion momento': 'accionMomento',
-        'accion momento - otra': 'accionMomentoOtra',
-        '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - Pares expertos': 'participaPares',
-        '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - Docentes acompañados': 'participaDocentes',
-        '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - Mentores': 'participaMentores',
-        '¿Quiénes participan activamente en la conversación o actividad en este momento? Puede seleccionar más de un actor. Si no está ocurriendo una conversación o actividad en este momento, selecciona No aplica - No aplica': 'participaNA',
-        '¿Quiénes participan activamente en la conversación o actividad en este momento? Si no está ocurriendo una conversación o actividad en este momento, selecciona "No aplica" - antiguo': 'participantesAntiguo',
-        '¿Quiénes participan activamente en la conversación o actividad en este momento? Si no está ocurriendo una conversación o actividad en este momento, selecciona "No aplica" -': 'participantes',
-        'Quien dirige': 'quienDirige',
-        'Registre cualquier comentario para comprender lo sucedido en esta instantánea': 'comentario',
-        'Número de instantánea': 'numInstantanea'
-    }
     
     # Aplicar el renombramiento solo a las columnas que existen
-    df_inst = df_inst.rename(columns={k: v for k, v in rename_dict.items() if k in df_inst.columns})
+    df_inst = df_inst.rename(columns={k: v for k, v in RENAME_INSTANTANEAS.items() if k in df_inst.columns})
     
     # Crear columna 'participantes' fusionando las dos columnas posibles
     if 'participantes' not in df_inst.columns and 'participantesAntiguo' in df_inst.columns:
@@ -3187,7 +3198,7 @@ explorando tanto las actitudes como las prácticas de colaboración en el contex
 """)
 
 # Crear las pestañas principales
-tab1, tab2, tab3 = st.tabs([" Resumen Ejecutivo", "📊 Momentos", "⚡ Instantáneas"])
+tab1, tab2, tab3, tab4 = st.tabs([" Resumen Ejecutivo", "📊 Momentos", "⚡ Instantáneas", "📈 Gráficas Jesús"])
 
 with tab1:
     # Mostrar resumen ejecutivo
@@ -3211,6 +3222,10 @@ with tab3:
     instantaneas()
     # Métricas instantáneas adicionales
     st.markdown("---")
+
+with tab4:
+    st.header("📈 Gráficas Jesús")
+    graficas_jesus_tab()
 
 
 # Pie de página
