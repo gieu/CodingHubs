@@ -8,19 +8,26 @@ from uuid import uuid4
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from plotly.colors import qualitative, sequential
 from plotly.subplots import make_subplots
 
 from utils.chart_config import get_chart_config
 
 
 chart_config = {**get_chart_config(), "displaylogo": False}
-MOMENT_COLORS = {"Pretest": "#636EFA", "Postest": "#EF553B"}
-PRACTICE_COLORS = {
-    "Pretest": "cornflowerblue", "Postest": "orchid",
-    "2024_1": qualitative.Plotly[0], "2024_2": qualitative.Plotly[1],
-    "2025_1": qualitative.Plotly[2], "2025_2": qualitative.Plotly[3],
-    "2026_1": qualitative.Plotly[4],
+# Misma paleta categórica y escala verde de Encuentros colaborativos.
+CATEGORY_COLORS = [
+    "#46BAD2", "#00A651", "#ff7f00", "#271D67", "#E74C3C",
+    "#F39C12", "#34495E", "#16A085", "#E67E22", "#8E44AD",
+]
+GREEN_SCALE = [
+    "#E8F5E8", "#C8E6C8", "#A5D6A7", "#81C784", "#66BB6A",
+    "#4CAF50", "#43A047", "#388E3C", "#2E7D32", "#1B5E20",
+]
+MOMENT_COLORS = {
+    "Pretest": CATEGORY_COLORS[0], "Postest": CATEGORY_COLORS[1],
+    "2024_1": CATEGORY_COLORS[0], "2024_2": CATEGORY_COLORS[1],
+    "2025_1": CATEGORY_COLORS[2], "2025_2": CATEGORY_COLORS[3],
+    "2026_1": CATEGORY_COLORS[4],
 }
 INSTANT = "Número de instantánea"
 
@@ -130,7 +137,7 @@ def _bars(rows, title, colors=None, horizontal=True):
         axis = {"x": values, "y": [_wrap(c) for c in categories], "orientation": "h"} if horizontal else {
             "x": [_wrap(c, 23) for c in categories], "y": values}
         fig.add_trace(go.Bar(
-            **axis, name=moment, marker_color=colors.get(moment, qualitative.Plotly[index % 10]),
+            **axis, name=moment, marker_color=colors.get(moment, CATEGORY_COLORS[index % len(CATEGORY_COLORS)]),
             text=[f"{v:.1f}%" if v is not None else "" for v in values],
             textposition="outside", cliponaxis=False, customdata=custom,
             hovertemplate="%{customdata[2]}<br>%{text}<br>Observaciones: %{customdata[0]} de %{customdata[1]}<extra>%{fullData.name}</extra>",
@@ -205,11 +212,32 @@ def instantaneas(instantaneas, observaciones):
                "Los porcentajes usan el total de clases observadas de cada momento, incluso si una clase no tiene respuesta en esa instantánea.")
     if invalid:
         st.caption(f"{invalid} registros sin número de instantánea quedan fuera de estos gráficos.")
+    # Unificar variantes del formulario antes de contar acciones y categorías.
+    if "accion_docente_clean" in df:
+        aliases = {
+            _normalized(label): action
+            for action, labels in {
+                "Hacer preguntas": [
+                    "Hacer preguntas", "Está haciendo preguntas a toda la clase",
+                    "Está haciendo preguntas a los/las estudiantes",
+                ],
+                "Retroalimentar trabajos": [
+                    "Retroalimentar trabajos",
+                    "Está retroalimentando el trabajo realizado por los/las estudiantes",
+                    "Está retroalimentando el trabajo realizado por los/las estudiantes (en parejas o grupos)",
+                ],
+            }.items()
+            for label in labels
+        }
+        canonical = df["accion_docente_clean"].map(lambda value: aliases.get(_normalized(value)))
+        matched = canonical.notna()
+        df.loc[matched, "accion_docente_clean"] = canonical[matched]
+        df.loc[matched, "accion_docente_cat"] = "Interacción"
     if "accion_docente_cat" in df:
         clean = df.copy()
         clean["accion_docente_cat"] = clean["accion_docente_cat"].fillna("Sin dato")
         categories = sorted(clean["accion_docente_cat"].unique().tolist())
-        palette = {c: qualitative.Plotly[i % 10]
+        palette = {c: CATEGORY_COLORS[i % len(CATEGORY_COLORS)]
                    for i, c in enumerate(c for c in categories if c != "Sin dato")}
         palette["Sin dato"] = "#8D8D96"
         moments = _moments(clean)
@@ -263,7 +291,10 @@ def instantaneas(instantaneas, observaciones):
         _missing("Acciones del docente", ["accion_docente_clean"])
         return
     df["accion_docente_clean"] = df["accion_docente_clean"].fillna("Sin dato")
-    actions = sorted(df["accion_docente_clean"].unique().tolist())
+    priority = ["Dar instrucciones", "Explicar temas", "Retroalimentar trabajos"]
+    available = df["accion_docente_clean"].unique().tolist()
+    actions = [action for action in priority if action in available]
+    actions += sorted(action for action in available if action not in priority)
     for moment in _moments(df):
         total = int(totals_by_moment.get(moment, 0))
         if not total:
@@ -275,7 +306,7 @@ def instantaneas(instantaneas, observaciones):
         percentages = counts / total * 100
         fig = go.Figure(go.Heatmap(
             x=numbers, y=[_wrap(a) for a in actions], z=percentages.to_numpy().tolist(),
-            colorscale=sequential.Purples, zmin=0, zmax=100,
+            colorscale=GREEN_SCALE, zmin=0, zmax=100,
             customdata=[[[int(count), total] for count in row] for row in counts.to_numpy()], texttemplate="%{z:.1f}%",
             colorbar=dict(title="Porcentaje"),
             hovertemplate="Acción: %{y}<br>Instantánea %{x}<br>%{z:.1f}%<br>Observaciones: %{customdata[0]} de %{customdata[1]}<extra></extra>",
@@ -327,7 +358,7 @@ def _practice_comparison(rows):
             x=part["porcentaje"].tolist(),
             y=[[groups[c] for c in part_categories], [_wrap(labels[c]) for c in part_categories]],
             mode="markers+text", name=moment,
-            marker=dict(color=PRACTICE_COLORS.get(moment, "#636EFA"),
+            marker=dict(color=MOMENT_COLORS.get(moment, CATEGORY_COLORS[0]),
                         size=17 if moment == "Pretest" else 10,
                         symbol="circle-open" if moment == "Pretest" else "diamond",
                         line=dict(width=2)),
@@ -398,7 +429,7 @@ def observaciones_generales(obs_generales, momentos_practicas=None):
                 part = counts[counts["momento"] == moment]
                 fig.add_trace(go.Scatter(
                     x=part["grado"].tolist(), y=part["grado_guia"].tolist(), mode="markers+text",
-                    name=moment, marker=dict(color=MOMENT_COLORS.get(moment, qualitative.Plotly[i % 10]),
+                    name=moment, marker=dict(color=MOMENT_COLORS.get(moment, CATEGORY_COLORS[i % len(CATEGORY_COLORS)]),
                                             size=(part["cantidad"] * 5 + (24 if moment == "Pretest" else 12)).tolist(),
                                             symbol={"Pretest": "circle-open", "Postest": "diamond"}.get(moment, "circle"),
                                             line=dict(width=2), opacity=0.9),
@@ -425,7 +456,7 @@ def observaciones_generales(obs_generales, momentos_practicas=None):
         if column not in users:
             _missing(label, [column])
             continue
-        _bars(_categorical_rows(users, column), f"Observaciones con uso de guías por {label.lower()}")
+        _bars(_categorical_rows(users, column), f"Observaciones con uso de guías por {label.lower()}", horizontal=False)
 
 
 PRIMM = {
@@ -437,11 +468,11 @@ PRIMM = {
 }
 
 
-def _group_detail(df, mapping, title, checklist=False):
+def _group_detail(df, mapping, title, checklist=False, horizontal=True):
     missing = [c for c in mapping if c not in df]
     if missing:
         _missing(title + " (campos no disponibles)", missing)
-    _bars(_percent_rows(df, mapping, checklist), title)
+    _bars(_percent_rows(df, mapping, checklist), title, horizontal=horizontal)
 
 
 def observaciones_ti(obs_generales):
@@ -540,7 +571,7 @@ def observaciones_stem(obs_generales):
     _group_detail(df[sub.fillna(False)].copy(), {
         "descomposicion": "Descomposición", "patrones": "Patrones", "algoritmico": "Pensamiento algorítmico",
         "depuracion": "Depuración", "abstraccion": "Abstracción", "logico": "Pensamiento lógico",
-    }, "Subhabilidades en observaciones que las aplican")
+    }, "Subhabilidades en observaciones que las aplican", horizontal=False)
     st.subheader("Detalle de prácticas de Weintrop aplicadas")
     _group_detail(df[weintrop].copy(), main, "Distribución general de prácticas de Weintrop")
     dimensions = {
