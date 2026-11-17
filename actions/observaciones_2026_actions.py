@@ -97,7 +97,7 @@ def _missing(title, columns):
     st.info(f"{title}: la fuente actual no contiene los campos {', '.join(columns)}.")
 
 
-def _percent_rows(df, mapping, checklist=False):
+def _percent_rows(df, mapping, checklist=False, totals=None):
     rows = []
     for moment in _moments(df):
         part = df[df["momento"] == moment]
@@ -105,8 +105,8 @@ def _percent_rows(df, mapping, checklist=False):
             if column not in part:
                 continue
             responses = _flag(part, column, checklist)
-            total = int(responses.notna().sum())
-            if total:
+            total = int(totals.get(moment, 0) if totals is not None else responses.notna().sum())
+            if total and responses.notna().any():
                 count = int(responses.fillna(False).sum())
                 rows.append(dict(momento=moment, categoria=label, porcentaje=count / total * 100,
                                  cantidad=count, total=total))
@@ -166,9 +166,10 @@ def _categorical_rows(df, column):
     return rows.rename(columns={column: "categoria"})
 
 
-def instantaneas(instantaneas):
+def instantaneas(instantaneas, observaciones):
     st.subheader("Instantáneas")
     df = _prepare(instantaneas)
+    totals_by_moment = _prepare(observaciones).groupby("momento").size()
     if df.empty:
         st.info("No hay instantáneas en los datos seleccionados.")
         return
@@ -201,7 +202,7 @@ def instantaneas(instantaneas):
         st.info("No hay números de instantánea válidos para graficar.")
         return
     st.caption(f"{len(df)} instantáneas con respuestas. Se incluyen todos los números con registros disponibles. "
-               "Los porcentajes usan el total de observaciones de cada instantánea y momento; los vacíos se muestran como Sin dato.")
+               "Los porcentajes usan el total de clases observadas de cada momento, incluso si una clase no tiene respuesta en esa instantánea.")
     if invalid:
         st.caption(f"{invalid} registros sin número de instantánea quedan fuera de estos gráficos.")
     if "accion_docente_cat" in df:
@@ -212,6 +213,10 @@ def instantaneas(instantaneas):
                    for i, c in enumerate(c for c in categories if c != "Sin dato")}
         palette["Sin dato"] = "#8D8D96"
         moments = _moments(clean)
+        moments = [moment for moment in moments if totals_by_moment.get(moment, 0) > 0]
+        if not moments:
+            st.info("No hay observaciones generales para calcular los porcentajes de instantáneas.")
+            return
         columns = min(3, len(moments))
         rows = (len(moments) + columns - 1) // columns
         fig = make_subplots(
@@ -225,16 +230,16 @@ def instantaneas(instantaneas):
             col += 1
             part = clean[clean["momento"] == moment]
             numbers = sorted(part[INSTANT].unique().tolist())
-            totals = part.groupby(INSTANT).size()
+            total = int(totals_by_moment[moment])
             counts = part.groupby([INSTANT, "accion_docente_cat"]).size()
             for category in categories:
-                values = [100 * counts.get((number, category), 0) / totals[number] for number in numbers]
+                values = [100 * counts.get((number, category), 0) / total for number in numbers]
                 fig.add_trace(
                     go.Scatter(
                         x=numbers, y=values, mode="lines+markers", name=category,
                         showlegend=category not in shown_categories,
                         line=dict(color=palette[category]),
-                        customdata=[[int(counts.get((n, category), 0)), int(totals[n])] for n in numbers],
+                        customdata=[[int(counts.get((n, category), 0)), total] for n in numbers],
                         hovertemplate="Instantánea %{x}<br>%{y:.1f}%<br>Observaciones: %{customdata[0]} de %{customdata[1]}<extra>%{fullData.name}</extra>",
                     ),
                     row=row, col=col,
@@ -260,18 +265,20 @@ def instantaneas(instantaneas):
     df["accion_docente_clean"] = df["accion_docente_clean"].fillna("Sin dato")
     actions = sorted(df["accion_docente_clean"].unique().tolist())
     for moment in _moments(df):
+        total = int(totals_by_moment.get(moment, 0))
+        if not total:
+            continue
         part = df[df["momento"] == moment]
         numbers = sorted(part[INSTANT].unique().tolist())
         counts = part.groupby(["accion_docente_clean", INSTANT]).size().unstack(fill_value=0)
         counts = counts.reindex(index=actions, columns=numbers, fill_value=0)
-        totals = part.groupby(INSTANT).size().reindex(numbers)
-        percentages = counts.div(totals, axis=1) * 100
+        percentages = counts / total * 100
         fig = go.Figure(go.Heatmap(
             x=numbers, y=[_wrap(a) for a in actions], z=percentages.to_numpy().tolist(),
             colorscale=sequential.Purples, zmin=0, zmax=100,
-            customdata=counts.to_numpy().tolist(), texttemplate="%{z:.1f}%",
+            customdata=[[[int(count), total] for count in row] for row in counts.to_numpy()], texttemplate="%{z:.1f}%",
             colorbar=dict(title="Porcentaje"),
-            hovertemplate="Acción: %{y}<br>Instantánea %{x}<br>%{z:.1f}%<br>Observaciones: %{customdata}<extra></extra>",
+            hovertemplate="Acción: %{y}<br>Instantánea %{x}<br>%{z:.1f}%<br>Observaciones: %{customdata[0]} de %{customdata[1]}<extra></extra>",
         ))
         fig.update_layout(title=_wrap(f"¿Qué está haciendo el docente? — {moment}", 70),
                           height=max(450, len(actions) * 38 + 170))
@@ -304,11 +311,12 @@ def _practice_comparison(rows):
     groups = {category: category.split(": ", 1)[0] for category in categories}
     labels = {category: category.split(": ", 1)[1] for category in categories}
     moments = _moments(rows)
+    endpoints = ["Pretest", "Postest"] if {"Pretest", "Postest"}.issubset(moments) else ["2024_1", "2026_1"]
     fig = go.Figure()
     for category in categories:
         part = rows[rows["categoria"] == category]
-        if {"Pretest", "Postest"}.issubset(set(part["momento"])):
-            values = part.set_index("momento").loc[["Pretest", "Postest"], "porcentaje"].tolist()
+        if set(endpoints).issubset(part["momento"]):
+            values = part.set_index("momento").loc[endpoints, "porcentaje"].tolist()
             fig.add_trace(go.Scatter(x=values, y=[[groups[category]] * 2, [_wrap(labels[category])] * 2],
                                     mode="lines", line=dict(color="lightgray", width=2),
                                     showlegend=False, hoverinfo="skip"))
@@ -331,24 +339,25 @@ def _practice_comparison(rows):
         ))
     fig.update_layout(title="Porcentaje de observaciones con respuesta Sí en cada práctica",
                       height=max(600, len(categories) * 48 + 200))
-    fig.update_xaxes(range=[-5, 112], ticksuffix="%", title="Porcentaje de respuestas válidas")
+    fig.update_xaxes(range=[-5, 112], ticksuffix="%", title="Porcentaje de clases observadas")
     fig.update_yaxes(gridcolor="lightgray", gridwidth=1, showgrid=True,
                      autorange="reversed", title=None)
     _show(fig, margin=dict(l=300, r=35, t=125, b=55))
 
 
-def observaciones_generales(obs_generales):
+def observaciones_generales(obs_generales, momentos_practicas=None):
     st.subheader("Observaciones Generales")
     df = _prepare(obs_generales)
     if df.empty:
         st.info("No hay observaciones generales en los datos seleccionados.")
         return
-    st.caption(f"{len(df)} observaciones de clase. Los porcentajes de prácticas se calculan sobre respuestas válidas "
-               "por práctica y momento. Parcialmente cuenta como respuesta distinta de Sí; los vacíos y No aplica se excluyen.")
+    st.caption(f"{len(df)} observaciones de clase. Los porcentajes de prácticas usan el total de clases observadas "
+               "de cada momento. Solo las respuestas Sí suman al numerador; los vacíos y No aplica permanecen en el denominador.")
     absent = [c for c in GENERAL_PRACTICES if c not in df]
     if absent:
         _missing("Prácticas generales no disponibles", absent)
-    _practice_comparison(_percent_rows(df, GENERAL_PRACTICES))
+    practices = df if momentos_practicas is None else df[df["momento"].isin(momentos_practicas)]
+    _practice_comparison(_percent_rows(practices, GENERAL_PRACTICES, totals=df.groupby("momento").size()))
 
     st.subheader("Uso de guías de aprendizaje")
     if "guia_pedagogica" not in df:
@@ -359,6 +368,13 @@ def observaciones_generales(obs_generales):
     guides["uso_guia"] = guide_flag.map({True: "Sí", False: "No"}).fillna("Sin dato / No aplica")
     _bars(_categorical_rows(guides, "uso_guia"), "Distribución de observaciones según uso de guías", horizontal=False)
     users = df[guide_flag.fillna(False)].copy()
+    users_2026 = users[users["momento"].astype("string").str.startswith("2026", na=False)]
+    if not users_2026.empty and "asignatura" in users_2026:
+        subjects = users_2026["asignatura"].astype("string").str.strip().fillna("Sin asignatura registrada").replace("", "Sin asignatura registrada").value_counts()
+        st.caption("Uso de guías en 2026 por asignatura (clases observadas): " +
+                   "; ".join(f"{subject}: {count}" for subject, count in subjects.items()) + ".")
+    elif df["momento"].astype("string").str.startswith("2026", na=False).any():
+        st.caption("No hay uso de guías con asignatura registrada en las observaciones seleccionadas de 2026.")
 
     st.subheader("Grado observado vs Grado de guía")
     if all(c in users for c in ["grado", "grado_guia"]):
@@ -502,9 +518,6 @@ def observaciones_stem(obs_generales):
     flags = pd.concat([_flag(df, c) for c in main], axis=1)
     valid = sub.notna() & flags.notna().all(axis=1)
     complete = df[valid].copy()
-    if complete.empty:
-        st.info("No hay respuestas válidas de subhabilidades y Weintrop para graficar.")
-        return
     total_by_moment = df.groupby("momento").size()
     valid_by_moment = complete.groupby("momento").size()
     completeness = "; ".join(
@@ -514,7 +527,10 @@ def observaciones_stem(obs_generales):
     st.caption(f"Respuestas completas de subhabilidades y Weintrop por momento: {completeness}.")
     without_data = [moment for moment in _moments(df) if valid_by_moment.get(moment, 0) == 0]
     if without_data:
-        st.info(f"Sin datos válidos de subhabilidades y Weintrop en: {', '.join(without_data)}.")
+        st.info(f"Sin datos válidos de subhabilidades y Weintrop en: {', '.join(without_data)}. "
+                "Estos momentos tienen clases observadas, pero faltan respuestas en la fuente para calcular estas gráficas; no equivalen a 0%.")
+    if complete.empty:
+        return
     weintrop = flags.fillna(False).any(axis=1)
     complete["tipo_practica"] = [
         "Ambas" if sub[i] and weintrop[i] else "Solo subhabilidades" if sub[i] else "Solo Weintrop" if weintrop[i] else "Ninguna"

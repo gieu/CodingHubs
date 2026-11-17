@@ -108,7 +108,7 @@ tab1, tab2, tab3 = st.tabs(["Clases STEM", "Clases TI", "Todas las clases"])
 with tab1:
     st.header("Observaciones STEM")
     df_stem_instantaneas = df_stem_instantaneas.drop(columns=["nombre_docente"])
-    instantaneas(df_stem_instantaneas)
+    instantaneas(df_stem_instantaneas, df_stem_generales)
 
     with st.expander("Ver datos de instantáneas"):
         st.dataframe(df_stem_instantaneas)
@@ -128,7 +128,7 @@ with tab1:
 
 with tab2:
     st.header("Observaciones TI")
-    instantaneas(df_ti_instantaneas)
+    instantaneas(df_ti_instantaneas, df_ti_generales)
     df_ti_instantaneas = df_ti_instantaneas.drop(columns=["nombre_docente"])
 
     with st.expander("Ver datos de instantáneas"):
@@ -152,14 +152,14 @@ with tab3:
     combined_instantaneas = pd.concat(
         [df_stem_instantaneas, df_ti_instantaneas], ignore_index=True
     )
-    instantaneas(combined_instantaneas)
+    combined_generales = pd.concat(
+        [df_stem_generales, df_ti_generales], ignore_index=True
+    )
+    instantaneas(combined_instantaneas, combined_generales)
 
     with st.expander("Ver datos de instantáneas"):
         st.dataframe(combined_instantaneas)
 
-    combined_generales = pd.concat(
-        [df_stem_generales, df_ti_generales], ignore_index=True
-    )
     observaciones_generales(combined_generales)
 
     with st.expander("Ver datos generales"):

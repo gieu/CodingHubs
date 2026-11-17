@@ -226,7 +226,7 @@ dimensiones = {
 }
 
 
-tab1, tab2 = st.tabs(["Marco de Calidad 2025", "Análisis de dimensiones"])
+tab1, tab2 = st.tabs(["Marco de Calidad", "Análisis de dimensiones"])
 
 with tab1:
     st.markdown("---")
@@ -321,7 +321,7 @@ with tab2:
 
 st.markdown("---")
 st.write(
-    "© 2025 Colombia Programa - Ministerio de Tecnologías de la Información y las Comunicaciones (MinTIC)"
+    "© 2026 Universidad del Norte"
 )
 
 # Formatear el HTML con las imágenes convertidas a base64
