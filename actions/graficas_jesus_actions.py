@@ -26,10 +26,27 @@ def graficas_jesus(df):
         st.warning("No hay datos de instantáneas disponibles.")
         return
 
+    # Las gráficas se agrupan por los datos que usan; dentro de cada grupo van las distintas formas de verlos.
+    st.header("Acciones")
     grafica_heatmap_acciones(df)
+
+    st.divider()
+    st.header("Tipo de participante")
+    st.caption("Columnas: participa_coding_hub_masters, participa_docentes_acompanados, participa_mentores, participa_no_aplica")
     grafica_lineas_participantes(df)
+    grafica_lineas_participantes_selecciones(df)
+
+    st.divider()
+    st.header("Género")
+    st.caption("Columnas: participa_hombres, participa_mujeres, participa_genero_no_aplica")
     grafica_distribucion_genero(df)
+    grafica_lineas_genero(df)
+
+    st.divider()
+    st.header("Quién dirige")
+    st.caption("Columna: quien_dirige")
     grafica_quien_dirige(df)
+    grafica_lineas_quien_dirige(df)
 
 
 # Mismo estilo que el mapa de calor de la pestaña Instantáneas
@@ -279,6 +296,99 @@ def grafica_distribucion_genero(df):
     )
 
 
+GENEROS = {
+    'participa_hombres': ('Hombres', '#00A651'),
+    'participa_mujeres': ('Mujeres', '#ff7f00'),
+    'participa_genero_no_aplica': ('No aplica', '#271D67'),
+}
+
+
+def _una_observacion_por_instantanea(df):
+    """La hoja trae una fila por acción; se cuenta una observación por instantánea registrada."""
+    datos = df.copy()
+    if "id_respuesta" in datos.columns:
+        datos = datos.drop_duplicates(subset=["id_respuesta", "numero_instantanea"])
+    datos["numero_instantanea"] = pd.to_numeric(datos["numero_instantanea"], errors="coerce")
+    datos = datos.dropna(subset=["numero_instantanea"])
+    datos["numero_instantanea"] = datos["numero_instantanea"].astype(int)
+    return datos
+
+
+def _lineas_sin_ceros(largo, numeros, titulo, titulo_y, leyenda, colores):
+    """Líneas por instantánea; los valores en 0 no se dibujan y la línea conecta los puntos con datos."""
+    fig = px.line(
+        largo,
+        x="Número de instantánea",
+        y=titulo_y,
+        color=leyenda,
+        markers=True,
+        title=titulo,
+        color_discrete_map=colores,
+        category_orders={leyenda: list(colores)},
+    )
+    fig.update_traces(line=dict(width=3), marker=dict(size=8, line=dict(width=2, color="white")), connectgaps=True)
+    fig.update_layout(
+        height=500,
+        title=dict(font=dict(size=18)),
+        legend=dict(title=leyenda, orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+        xaxis=dict(tickmode="array", tickvals=numeros, ticktext=[str(n) for n in numeros]),
+        yaxis=dict(rangemode="tozero", dtick=1),
+        hovermode="x unified",
+    )
+    st.plotly_chart(fig, use_container_width=True, config=chart_config)
+
+
+def _lineas_casillas(df, casillas, titulo, titulo_y, leyenda, aviso):
+    """Una línea por casilla (columna con texto = marcada): observaciones con esa casilla llena por instantánea."""
+    faltantes = [c for c in ["numero_instantanea", *casillas] if c not in df.columns]
+    if faltantes:
+        st.warning(f"Faltan columnas en los datos: {', '.join(faltantes)}")
+        return
+    datos = _una_observacion_por_instantanea(df)
+    if datos.empty:
+        st.warning(aviso)
+        return
+    filas = []
+    for col, (nombre, _) in casillas.items():
+        llena = datos[col].astype("string").str.strip().replace("", pd.NA).notna()
+        conteo = llena.groupby(datos["numero_instantanea"]).sum()
+        filas += [{"Número de instantánea": int(n), leyenda: nombre, titulo_y: int(v)}
+                  for n, v in conteo.items() if v > 0]
+    if not filas:
+        st.warning(aviso)
+        return
+    _lineas_sin_ceros(
+        pd.DataFrame(filas), sorted(datos["numero_instantanea"].unique()),
+        titulo, titulo_y, leyenda, {nombre: color for nombre, color in casillas.values()},
+    )
+
+
+def grafica_lineas_genero(df):
+    """Líneas: observaciones por instantánea en que está marcada cada casilla de género."""
+    st.subheader("📊 Participación por Género")
+    _lineas_casillas(
+        df, GENEROS, "Participación según género de participante e instantánea",
+        "Cantidad de selecciones", "Género", "No hay datos válidos de participación por género para mostrar.",
+    )
+
+
+PARTICIPANTES_SELECCIONES = {
+    'participa_coding_hub_masters': ('Coding Hub Masters', '#46BAD2'),
+    'participa_docentes_acompanados': ('Docentes acompañados', '#00A651'),
+    'participa_mentores': ('Mentores', '#ff7f00'),
+    'participa_no_aplica': ('No aplica', '#271D67'),
+}
+
+
+def grafica_lineas_participantes_selecciones(df):
+    """Segunda vista de los tipos de participante: sin ceros y con los textos de la gráfica de referencia."""
+    st.subheader("📊 Tipo de Participante por Instantánea")
+    _lineas_casillas(
+        df, PARTICIPANTES_SELECCIONES, "Participación según tipo de participante e instantánea",
+        "Cantidad de selecciones", "Tipo de participante", "No hay datos válidos de participación para mostrar.",
+    )
+
+
 ETIQUETAS_DIRECCION = {
     'Sí, un(a) Coding Hub Master': 'Coding Hubs Masters',
     'Sí, un(a) docente acompañado(a)': 'Docentes Acompañados',
@@ -326,6 +436,48 @@ def grafica_quien_dirige(df):
         "Instantáneas", numeros, [str(n) for n in numeros],
         col_color="quien_dirige", leyenda="Quién dirige la participación",
         colores=COLORES_DIRECCION, orden=list(COLORES_DIRECCION),
+    )
+
+
+COLORES_DIRECCION_LINEAS = {
+    'Coding Hub Master': '#46BAD2',
+    'Docente acompañado': '#00A651',
+    'Interacción balanceada': '#8E44AD',
+    'No interacción': '#271D67',
+}
+ETIQUETAS_DIRECCION_LINEAS = {
+    'Sí, un(a) Coding Hub Master': 'Coding Hub Master',
+    'Sí, un(a) docente acompañado(a)': 'Docente acompañado',
+    'No, se da interacción entre varios/as docentes de manera balanceada': 'Interacción balanceada',
+    'No ocurre interacción y/o ninguna persona dirige este momento': 'No interacción',
+}
+
+
+def grafica_lineas_quien_dirige(df):
+    """Segunda vista de quién dirige: líneas por instantánea, sin ceros."""
+    st.subheader("📊 Quién Dirige por Instantánea")
+    columnas = ["quien_dirige", "numero_instantanea"]
+    faltantes = [c for c in columnas if c not in df.columns]
+    if faltantes:
+        st.warning(f"Faltan columnas en los datos: {', '.join(faltantes)}")
+        return
+    datos = _una_observacion_por_instantanea(df)
+    datos["quien_dirige"] = datos["quien_dirige"].astype("string").str.strip()
+    datos = datos.dropna(subset=["quien_dirige"])
+    datos = datos[datos["quien_dirige"] != ""]
+    if datos.empty:
+        st.warning("No hay datos válidos de 'quien_dirige' para mostrar.")
+        return
+    datos["Quién dirige"] = datos["quien_dirige"].replace(ETIQUETAS_DIRECCION_LINEAS).astype(str)
+    largo = (
+        datos.groupby(["numero_instantanea", "Quién dirige"]).size()
+        .reset_index(name="Cantidad de registros")
+        .rename(columns={"numero_instantanea": "Número de instantánea"})
+    )
+    _lineas_sin_ceros(
+        largo, sorted(datos["numero_instantanea"].unique()),
+        "Tipos de docentes que dirigen según instantánea", "Cantidad de registros",
+        "Quién dirige", COLORES_DIRECCION_LINEAS,
     )
 
 
