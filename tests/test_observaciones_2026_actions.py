@@ -7,6 +7,22 @@ from actions import observaciones_2026_actions as charts
 
 
 class TeacherActionAliasesTest(unittest.TestCase):
+    def test_action_colors_stay_the_same_when_filtering_categories(self):
+        source = pd.DataFrame({
+            "momento": ["2026_1", "2026_1"],
+            charts.INSTANT: [1, 1],
+            "accion_docente_clean": ["Gestión de aula", "Supervisar trabajos"],
+            "accion_docente_cat": ["Gestión de aula", "Interacción"],
+        })
+        for subset in [source, source.iloc[[1]]]:
+            figures = []
+            with patch.object(charts, "_show", side_effect=lambda fig, **kwargs: figures.append(fig)), patch.object(charts, "st"):
+                charts.instantaneas(subset, source[["momento"]])
+            for trace in figures[0].data:
+                self.assertEqual(trace.line.color, charts.ACTION_COLORS[trace.name])
+            scale = figures[-1].data[0].colorscale
+            self.assertEqual([color for _, color in scale], charts.GREEN_SCALE)
+
     def test_heatmap_prioritizes_requested_actions_then_sorts_the_rest(self):
         source = pd.DataFrame({
             "momento": ["2025_1"] * 5,

@@ -29,6 +29,13 @@ MOMENT_COLORS = {
     "2025_1": CATEGORY_COLORS[2], "2025_2": CATEGORY_COLORS[3],
     "2026_1": CATEGORY_COLORS[4],
 }
+ACTION_COLORS = {
+    "Instrucción docente": CATEGORY_COLORS[0],
+    "Interacción": CATEGORY_COLORS[1],
+    "Gestión de aula": CATEGORY_COLORS[2],
+    "Tareas no docente": CATEGORY_COLORS[3],
+    "Sin dato": "#8D8D96",
+}
 INSTANT = "Número de instantánea"
 
 
@@ -237,9 +244,8 @@ def instantaneas(instantaneas, observaciones):
         clean = df.copy()
         clean["accion_docente_cat"] = clean["accion_docente_cat"].fillna("Sin dato")
         categories = sorted(clean["accion_docente_cat"].unique().tolist())
-        palette = {c: CATEGORY_COLORS[i % len(CATEGORY_COLORS)]
-                   for i, c in enumerate(c for c in categories if c != "Sin dato")}
-        palette["Sin dato"] = "#8D8D96"
+        palette = {c: ACTION_COLORS.get(c, CATEGORY_COLORS[i % len(CATEGORY_COLORS)])
+                   for i, c in enumerate(categories)}
         moments = _moments(clean)
         moments = [moment for moment in moments if totals_by_moment.get(moment, 0) > 0]
         if not moments:
