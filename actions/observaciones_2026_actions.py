@@ -579,7 +579,7 @@ def observaciones_stem(obs_generales):
         "depuracion": "Depuración", "abstraccion": "Abstracción", "logico": "Pensamiento lógico",
     }, "Subhabilidades en observaciones que las aplican", horizontal=False)
     st.subheader("Detalle de prácticas de Weintrop aplicadas")
-    _group_detail(df[weintrop].copy(), main, "Distribución general de prácticas de Weintrop")
+    _group_detail(df[weintrop].copy(), main, "Distribución general de prácticas de Weintrop", horizontal=False)
     dimensions = {
         "practicas_datos": {"recoleccion_datos": "Recolección de datos", "patrones_datos": "Patrones en datos", "organizacion_datos": "Organización de datos", "visualizacion_datos": "Visualización de datos"},
         "practicas_programacion": {"descomposicion_prog": "Descomposición", "instrucciones_prog": "Instrucciones paso a paso", "codificacion": "Codificación", "depuracion_prog": "Depuración"},
@@ -587,4 +587,4 @@ def observaciones_stem(obs_generales):
         "pensamiento_sistemico": {"datos_numericos": "Datos numéricos", "relaciones_numericas": "Relaciones numéricas", "impacto_variables": "Impacto de variables"},
     }
     for column, mapping in dimensions.items():
-        _group_detail(df[_flag(df, column).fillna(False)].copy(), mapping, f"{main[column]}: distribución por subpráctica")
+        _group_detail(df[_flag(df, column).fillna(False)].copy(), mapping, f"{main[column]}: distribución por subpráctica", horizontal=False)
