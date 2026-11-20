@@ -916,7 +916,7 @@ def q18_frequency_chart(df):
     return style_figure(fig, height=max(430, len(chart_df) * 42)), other_responses_df
 
 
-st.title("Biobots 2026")
+st.title("Biobots 2026 Manizales")
 st.markdown(
     "<p style='font-size:1.15rem;color:#52606d'>Priorice el acompañamiento de docentes con baja implementación y acelere la secuencia hasta el escenario 3.</p>",
     unsafe_allow_html=True,
