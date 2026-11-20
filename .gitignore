@@ -197,3 +197,7 @@ docs/infodocentes.txt
 referencia.md
 *.tmp
 *.bak
+
+# Encuesta local de referencia; los datos se consultan en Google Sheets
+/data/Encuesta profesores BioBots Bucaramanga (respuestas).xlsx
+/data/SeguimientoGamificaciónBucaramanga.xlsx
