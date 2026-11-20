@@ -97,9 +97,15 @@ def main():
         "Biobots": [
             st.Page(
                 page="app_pages/biobots.py",
-                title="Biobots 2026",
+                title="Biobots 2026 Manizales",
                 icon="📊",
                 url_path="/biobots"
+            ),
+            st.Page(
+                page="app_pages/biobots2026_bucaramanga.py",
+                title="Biobots 2026 Bucaramanga",
+                icon="📊",
+                url_path="/biobots2026_bucaramanga"
             )
         ],
         "Análisis de Estudiantes": [
