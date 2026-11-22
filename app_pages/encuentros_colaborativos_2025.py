@@ -150,7 +150,7 @@ def resumen_ejecutivo_momentos():
         return
     
     # Selector de fase
-    st.header("📋 Resumen Ejecutivo - Encuentros Colaborativos")
+    st.header("📋 Resumen Ejecutivo - Encuentros Colaborativos 2025")
     
     if 'Fase' in df.columns:
         fases_disponibles = sorted(df['Fase'].dropna().unique())
@@ -2065,7 +2065,7 @@ def instantaneas():
 # ==========================================
 # APLICACIÓN PRINCIPAL
 # ==========================================
-st.title("🤝  Análisis Encuentros Colaborativos e Instantáneas")
+st.title("🤝  Análisis Encuentros Colaborativos 2025 e Instantáneas")
 
 st.markdown("""
 Esta página está dedicada al análisis profundo de los **encuentros colaborativos** entre docentes, 
@@ -2103,7 +2103,7 @@ with tab3:
 # FOOTER Y CRÉDITOS
 # ==========================================
 st.markdown("---")
-st.write("© 2025 Colombia Programa - Encuentros Colaborativos - Ministerio de Tecnologías de la Información y las Comunicaciones (MinTIC)")
+st.write("© 2025 Colombia Programa - Encuentros Colaborativos 2025 - Ministerio de Tecnologías de la Información y las Comunicaciones (MinTIC)")
 
 # Formatear el HTML con las imágenes convertidas a base64
 formatted_footer = FOOTER_HTML.format(imagenes_base64=IMAGENES_BASE64)
