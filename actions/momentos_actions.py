@@ -87,6 +87,8 @@ def _mapa_calor_conductas(df, catalogo):
     respuesta = datos["respuesta"].astype("string").str.strip()
     datos["observada"] = respuesta.notna() & (respuesta.str.lower() != "ninguno") & (respuesta != "")
 
+    total_encuentros = int(datos["id_respuesta"].nunique())
+
     # Frecuencia = número de encuentros (id_respuesta) con la conducta observada en el momento.
     observadas = datos[datos["observada"]].drop_duplicates(subset=["id_respuesta", "momento", "conducta"])
     momentos = sorted(datos["momento"].unique())
@@ -100,9 +102,12 @@ def _mapa_calor_conductas(df, catalogo):
         x=momentos,
         y=list(pivot.index),
         color_continuous_scale=GREEN_SCALE,
+        # Escala fija 0..total de encuentros: así el máximo posible se ve aunque ninguna celda lo alcance.
+        range_color=[0, total_encuentros],
         labels=dict(x="Momento", y="Conductas", color="Frecuencia"),
         aspect="auto",
     )
+    fig.update_coloraxes(colorbar=dict(tickmode="linear", tick0=0, dtick=1))
     fig.update_layout(
         height=max(520, 50 * len(pivot.index) + 140),
         font=dict(size=16),
@@ -115,7 +120,7 @@ def _mapa_calor_conductas(df, catalogo):
         hovertemplate="%{y}<br>Momento %{x}<br>Encuentros: %{z}<extra></extra>",
     )
     st.plotly_chart(fig, use_container_width=True, config=chart_config)
-    st.caption(f"Frecuencia = encuentros (de {datos['id_respuesta'].nunique()}) en que la conducta se observó en el momento "
+    st.caption(f"Frecuencia = encuentros (de {total_encuentros}) en que la conducta se observó en el momento "
                "(respuesta distinta de \"Ninguno\").")
 
 
