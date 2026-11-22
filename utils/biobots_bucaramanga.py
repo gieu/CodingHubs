@@ -125,6 +125,39 @@ def stacked_figure(table, title, order):
     return fig
 
 
+APPLICATION_LABELS = [
+    ('Lidero sesiones', 'Lidero sesiones de juego'),
+    ('Identifico subhabilidades', 'Identifico subhabilidades de PC'),
+    ('Integro oportunidades', 'Integro conocimientos matemáticos'),
+    ('equidad de género', 'Promuevo equidad de género'),
+    ('gestión de aula', 'Gestiono el aula para implementar'),
+]
+
+
+def application_figure(table):
+    """Barras agrupadas: resultados mixtos vs. aplicación exitosa por área."""
+    data = table[table['Respuesta'].isin(['Resultados mixtos', 'Aplicación exitosa'])].copy()
+
+    def short(indicator):
+        return next((label for key, label in APPLICATION_LABELS if key in indicator), indicator)
+
+    data['Área'] = data['Indicador'].map(short).map(lambda v: wrapped(v, 18))
+    data['Respuesta'] = data['Respuesta'].replace({'Aplicación exitosa': 'Aplicado con éxito'})
+    areas = list(dict.fromkeys(data['Área']))
+    base = int(data['Base'].max())
+    fig = px.bar(data, x='Área', y='Porcentaje', color='Respuesta', barmode='group',
+                 custom_data=['n', 'Base'], text=data['Porcentaje'].map(lambda p: f'{p:.1f}%'),
+                 category_orders={'Área': areas, 'Respuesta': ['Resultados mixtos', 'Aplicado con éxito']},
+                 color_discrete_map={'Resultados mixtos': '#1DB2E8', 'Aplicado con éxito': '#F39C12'},
+                 title=f'Aplicación del aprendizaje en la práctica docente · N={base}')
+    fig.update_traces(textposition='outside', cliponaxis=False, textfont=dict(size=12, color='#203447'),
+                      hovertemplate='%{x}<br>%{y:.1f}% · %{customdata[0]} de %{customdata[1]}<extra>%{fullData.name}</extra>')
+    fig.update_yaxes(range=[0, 100], ticksuffix='%', title='Porcentaje de docentes')
+    fig.update_xaxes(title='Áreas de aplicación')
+    fig.update_layout(legend=dict(title='', itemclick=False, itemdoubleclick=False))
+    return fig
+
+
 def barrier_counts(series):
     values = clean(series)
     counts = dict.fromkeys(BARRIERS + ['Otras dificultades'], 0)

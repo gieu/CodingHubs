@@ -26,10 +26,10 @@ class TrackingTest(unittest.TestCase):
         fig = tracking.accompaniment_figure(self.data())
         self.assertEqual(list(fig.data[1].y), [0, 50, 0])
 
-    def test_heatmap_preserves_missing_and_labels_all_cells(self):
+    def test_heatmap_labels_missing_cells_as_zero(self):
         fig = tracking.heatmap_figure(self.data())
         self.assertEqual(len(fig.layout.annotations), 18)
-        self.assertEqual(sum(a.text == 'Sin registro' for a in fig.layout.annotations), 6)
+        self.assertEqual(sum(a.text == '0' for a in fig.layout.annotations), 6)
 
     def test_all_figures_serialize(self):
         data = self.data()
