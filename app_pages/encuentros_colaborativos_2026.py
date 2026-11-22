@@ -6,7 +6,11 @@ import actions.utils as utils
 from actions.graficas_jesus_actions import graficas_jesus
 from actions.resumen_actions import resumen_ejecutivo
 from actions.momentos_actions import (
-    mapa_calor_conductas_que, mapa_calor_conductas_como, lineas_conductas_como, burbujas_acciones_momento,
+    mapa_calor_conductas_que, mapa_calor_conductas_como,
+    barras_conductas_que, barras_conductas_como,
+    lineas_conductas_que, lineas_conductas_como,
+    barras_conductas_genero_que, barras_conductas_genero_como,
+    burbujas_acciones_momento,
 )
 import os
 # ==========================================
@@ -138,13 +142,24 @@ URL_AFIRMACIONES_EC = "https://docs.google.com/spreadsheets/d/1dbQaOF24h5FzGXbw3
 def momentos():
     """Pestaña Momentos: conductas asociadas al qué y al cómo, por momento (sin filtros)."""
     df_afirmaciones = load_data(URL_AFIRMACIONES_EC)
+    df_momentos = load_data(URL_MOMENTOS_EC)
+    df_docentes = load_data(URL_DOCENTES_UNICOS, mostrar_aviso=False)
+
     st.subheader("📊 Conductas asociadas al qué")
     mapa_calor_conductas_que(df_afirmaciones)
+    barras_conductas_que(df_afirmaciones)
     st.subheader("📊 Conductas asociadas al cómo")
     mapa_calor_conductas_como(df_afirmaciones)
+    barras_conductas_como(df_afirmaciones)
 
+    st.subheader("📈 Conductas del qué por tipo de participante")
+    lineas_conductas_que(df_momentos)
     st.subheader("📈 Conductas del cómo por tipo de participante")
-    lineas_conductas_como(load_data(URL_MOMENTOS_EC))
+    lineas_conductas_como(df_momentos)
+
+    st.subheader("📊 Participación por conducta y género")
+    barras_conductas_genero_que(df_momentos, df_docentes)
+    barras_conductas_genero_como(df_momentos, df_docentes)
 
     st.subheader("🫧 Acciones por momento")
     burbujas_acciones_momento(load_data(URL_INSTANTANEAS_ACCIONES))

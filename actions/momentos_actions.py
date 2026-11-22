@@ -66,12 +66,26 @@ def mapa_calor_conductas_como(df):
     _mapa_calor_conductas(df, CONDUCTAS_COMO)
 
 
-def _mapa_calor_conductas(df, catalogo):
+def barras_conductas_que(df):
+    """Barras del "qué": % de observaciones por momento y total por conducta (mismas cifras del mapa de calor)."""
+    _barras_conductas(df, CONDUCTAS_QUE)
+
+
+def barras_conductas_como(df):
+    """Barras del "cómo": % de observaciones por momento y total por conducta (mismas cifras del mapa de calor)."""
+    _barras_conductas(df, CONDUCTAS_COMO)
+
+
+def _frecuencias_conductas(df, catalogo):
+    """Tabla conducta x momento con el número de encuentros en que la conducta se observó.
+
+    Devuelve (pivot, total_encuentros, momentos), o None si faltan columnas o no hay datos.
+    """
     columnas = ["id_respuesta", "momento", "afirmacion", "respuesta"]
     faltantes = [c for c in columnas if c not in df.columns]
     if faltantes:
         st.warning(f"Faltan columnas en los datos: {', '.join(faltantes)}")
-        return
+        return None
 
     datos = df[columnas].copy()
     datos["conducta"] = datos["afirmacion"].apply(_conducta, catalogo=catalogo)
@@ -79,8 +93,8 @@ def _mapa_calor_conductas(df, catalogo):
     datos["momento"] = pd.to_numeric(datos["momento"].astype(str).str.extract(r"(\d+)")[0], errors="coerce")
     datos = datos.dropna(subset=["momento"])
     if datos.empty:
-        st.warning("No hay datos válidos para el mapa de calor de conductas.")
-        return
+        st.warning("No hay datos válidos para las gráficas de conductas.")
+        return None
     datos["momento"] = datos["momento"].astype(int)
 
     # Observada = cualquier respuesta distinta de "Ninguno"; las respuestas vacías cuentan como no observadas.
@@ -96,6 +110,14 @@ def _mapa_calor_conductas(df, catalogo):
         pd.crosstab(observadas["conducta"], observadas["momento"])
         .reindex(index=list(catalogo.values()), columns=momentos, fill_value=0)
     )
+    return pivot, total_encuentros, momentos
+
+
+def _mapa_calor_conductas(df, catalogo):
+    resultado = _frecuencias_conductas(df, catalogo)
+    if resultado is None:
+        return
+    pivot, total_encuentros, momentos = resultado
 
     fig = px.imshow(
         pivot.values,
@@ -117,15 +139,70 @@ def _mapa_calor_conductas(df, catalogo):
     )
     fig.update_traces(
         text=pivot.values, texttemplate="%{text}", textfont={"size": 14},
-        hovertemplate="%{y}<br>Momento %{x}<br>Encuentros: %{z}<extra></extra>",
+        hovertemplate="%{y}<br>Momento %{x}<br>Encuentros: %{z} de " + str(total_encuentros) + "<extra></extra>",
     )
     st.plotly_chart(fig, use_container_width=True, config=chart_config)
-    st.caption(f"Frecuencia = encuentros (de {total_encuentros}) en que la conducta se observó en el momento "
-               "(respuesta distinta de \"Ninguno\").")
+    st.caption(f"Se observaron {total_encuentros} encuentros, por eso la escala va de 0 a {total_encuentros} "
+               f"(el máximo posible, aunque ninguna conducta lo alcance). Frecuencia = en cuántos de esos encuentros "
+               "la conducta se observó en el momento (respuesta distinta de \"Ninguno\"; las respuestas vacías no cuentan).")
+
+
+def _barras_conductas(df, catalogo):
+    resultado = _frecuencias_conductas(df, catalogo)
+    if resultado is None:
+        return
+    pivot, total_encuentros, momentos = resultado
+
+    # Una observación = una conducta observada en un encuentro y momento (cada celda del mapa de calor suma las que tiene).
+    total = int(pivot.values.sum())
+    if total == 0:
+        st.info("No se observó ninguna conducta de este grupo, así que no hay barras que mostrar.")
+        return
+
+    por_momento = pivot.sum(axis=0).rename("Observaciones").reset_index()
+    por_momento.columns = ["Momento", "Observaciones"]
+    por_momento["Porcentaje"] = (por_momento["Observaciones"] / total * 100).round(1)
+    por_conducta = pivot.sum(axis=1).rename("Observaciones").reset_index()
+    por_conducta.columns = ["Conducta", "Observaciones"]
+    por_conducta = por_conducta.sort_values("Observaciones", ascending=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        fig = px.bar(
+            por_momento, x="Momento", y="Porcentaje", text="Porcentaje",
+            title="Porcentaje de conductas observadas por momento",
+            labels={"Momento": "Número de momento", "Porcentaje": "Porcentaje (%)"},
+            color="Porcentaje", color_continuous_scale=GREEN_SCALE,
+            hover_data={"Observaciones": True},
+        )
+        fig.update_traces(texttemplate="%{text}%", textposition="outside")
+        fig.update_layout(
+            showlegend=False, height=420, coloraxis_showscale=False,
+            xaxis=dict(tickmode="array", tickvals=momentos, ticktext=[str(m) for m in momentos]),
+            yaxis=dict(title="Porcentaje (%)", range=[0, por_momento["Porcentaje"].max() * 1.2]),
+        )
+        st.plotly_chart(fig, use_container_width=True, config=chart_config)
+    with col2:
+        fig = px.bar(
+            por_conducta, x="Observaciones", y="Conducta", text="Observaciones", orientation="h",
+            title="Frecuencia total por conducta",
+            labels={"Observaciones": "Observaciones", "Conducta": ""},
+            color="Observaciones", color_continuous_scale=GREEN_SCALE,
+        )
+        fig.update_traces(texttemplate="%{text}", textposition="outside")
+        fig.update_layout(
+            showlegend=False, height=420, coloraxis_showscale=False,
+            xaxis=dict(range=[0, por_conducta["Observaciones"].max() * 1.15]),
+            yaxis=dict(automargin=True),
+        )
+        st.plotly_chart(fig, use_container_width=True, config=chart_config)
+    st.caption(f"Una observación = una conducta observada en un encuentro y un momento (cada número del mapa de calor "
+               f"suma una por encuentro). Total: {total} observaciones en {total_encuentros} encuentros. "
+               "El porcentaje por momento es sobre ese total.")
 
 
 # ==========================================
-# LÍNEAS: CONDUCTAS DEL "CÓMO" POR TIPO DE PARTICIPANTE (hoja Momentos EC)
+# LÍNEAS: CONDUCTAS DEL "QUÉ" Y DEL "CÓMO" POR TIPO DE PARTICIPANTE (hoja Momentos EC)
 # ==========================================
 GRUPOS_COMO = {
     'Construcción de ambiente colaborativo': ['Humor', 'Ánimo', 'Valoración', 'Destacar habilidades'],
@@ -135,12 +212,26 @@ GRUPOS_COMO = {
     ],
     'Comunicación en espacios de aprendizaje': ['Perspectiva diferente', 'Contribución activa', 'Rol predominante'],
 }
+GRUPOS_QUE = {
+    'Transferencia de la experticia': ['Anécdotas', 'Estrategias', 'Vocabulario'],
+    'Instrucción centrada en el estudiante': ['Características estudiantes', 'Preguntas estudiantes'],
+    'Enfoque de género': ['Reflexión género', 'Diferencias género', 'Estrategias género'],
+}
 PARTICIPANTES_LINEAS = {'CHM': 'Coding Hub Master', 'DA': 'Docente acompañado'}
 COLORES_PARTICIPANTES_LINEAS = {'Coding Hub Master': '#46BAD2', 'Docente acompañado': '#ff7f00'}
 
 
+def lineas_conductas_que(df):
+    """Líneas por conducta del "qué": % de encuentros en que cada tipo de participante la tuvo, por momento."""
+    _lineas_conductas(df, CONDUCTAS_QUE, GRUPOS_QUE)
+
+
 def lineas_conductas_como(df):
     """Líneas por conducta del "cómo": % de encuentros en que cada tipo de participante la tuvo, por momento."""
+    _lineas_conductas(df, CONDUCTAS_COMO, GRUPOS_COMO)
+
+
+def _lineas_conductas(df, catalogo, grupos):
     columnas = ["id_respuesta", "momento", "afirmacion", "respuesta", "rol"]
     faltantes = [c for c in columnas if c not in df.columns]
     if faltantes:
@@ -149,7 +240,7 @@ def lineas_conductas_como(df):
 
     datos = df[columnas].copy()
     total_encuentros = datos["id_respuesta"].nunique()
-    datos["conducta"] = datos["afirmacion"].apply(_conducta, catalogo=CONDUCTAS_COMO)
+    datos["conducta"] = datos["afirmacion"].apply(_conducta, catalogo=catalogo)
     datos["momento"] = pd.to_numeric(datos["momento"].astype(str).str.extract(r"(\d+)")[0], errors="coerce")
     datos = datos.dropna(subset=["conducta", "momento"])
     datos["momento"] = datos["momento"].astype(int)
@@ -166,7 +257,7 @@ def lineas_conductas_como(df):
 
     momentos = [1, 2, 3, 4, 5]
     cuentas = datos.groupby(["conducta", "rol", "momento"]).size()
-    for grupo, conductas in GRUPOS_COMO.items():
+    for grupo, conductas in grupos.items():
         filas = []
         for conducta in conductas:
             for rol, nombre in PARTICIPANTES_LINEAS.items():
@@ -201,6 +292,113 @@ def lineas_conductas_como(df):
         st.plotly_chart(fig, use_container_width=True, config=chart_config)
     st.caption(f"% = encuentros (de {total_encuentros}) en que al menos una persona de ese tipo mostró la conducta en el momento "
                "(respuesta distinta de \"Ninguno\").")
+
+
+# ==========================================
+# BARRAS: PARTICIPACIÓN POR CONDUCTA Y GÉNERO (hojas Momentos EC + Docentes únicos)
+# ==========================================
+COLORES_GENERO = {'Masculino': '#119713', 'Femenino': '#FA960B'}
+
+
+def barras_conductas_genero_que(df, df_docentes):
+    _barras_conductas_genero(df, df_docentes, CONDUCTAS_QUE, 'qué')
+
+
+def barras_conductas_genero_como(df, df_docentes):
+    _barras_conductas_genero(df, df_docentes, CONDUCTAS_COMO, 'cómo')
+
+
+def _barras_conductas_genero(df, df_docentes, catalogo, nombre_grupo):
+    """Entre las personas que mostraron cada conducta, qué % es Femenino y qué % Masculino.
+
+    Persona = código dentro de un encuentro (id_respuesta + codigo). El sexo sale de la hoja Docentes únicos.
+    """
+    columnas = ["id_respuesta", "momento", "afirmacion", "respuesta", "rol", "codigo"]
+    faltantes = [c for c in columnas if c not in df.columns]
+    if faltantes:
+        st.warning(f"Faltan columnas en los datos: {', '.join(faltantes)}")
+        return
+    if df_docentes is None or not {"id_respuesta", "codigo", "sexo"}.issubset(df_docentes.columns):
+        st.warning("No hay datos de sexo (hoja Docentes únicos) para esta gráfica.")
+        return
+
+    datos = df[columnas].copy()
+    datos["conducta"] = datos["afirmacion"].apply(_conducta, catalogo=catalogo)
+    datos = datos.dropna(subset=["conducta"])
+    respuesta = datos["respuesta"].astype("string").str.strip()
+    observada = respuesta.notna() & (respuesta.str.lower() != "ninguno") & (respuesta != "")
+    datos["codigo"] = datos["codigo"].astype("string").str.strip()
+    # Solo observaciones atribuidas a una persona (con código).
+    datos = datos[observada & datos["codigo"].notna() & (datos["codigo"] != "")]
+    if datos.empty:
+        st.info("No hay conductas de este grupo atribuidas a personas.")
+        return
+
+    # Un código "D5" aparece como rol "D": se toma como Docente acompañado.
+    datos["rol"] = datos["rol"].astype("string").str.strip().replace({"D": "DA"})
+    datos["Participante"] = datos["rol"].map(PARTICIPANTES_LINEAS)
+
+    sexos = df_docentes[["id_respuesta", "codigo", "sexo"]].copy()
+    sexos["codigo"] = sexos["codigo"].astype("string").str.strip()
+    sexos["sexo"] = sexos["sexo"].astype("string").str.strip().str.title()
+    sexos = sexos.drop_duplicates(subset=["id_respuesta", "codigo"])
+    datos = datos.merge(sexos, on=["id_respuesta", "codigo"], how="left")
+
+    total_obs = len(datos)
+    datos = datos[datos["sexo"].isin(COLORES_GENERO)]
+    sin_sexo = total_obs - len(datos)
+    if datos.empty:
+        st.info("No hay observaciones con sexo registrado para esta gráfica.")
+        return
+    datos = datos.rename(columns={"sexo": "Género", "conducta": "Conducta"})
+    datos["persona"] = datos["id_respuesta"].astype(str) + "|" + datos["codigo"].astype(str)
+
+    def _porcentajes(base, claves):
+        por_genero = base.groupby(claves + ["Género"])["persona"].nunique().rename("Personas").reset_index()
+        total = base.groupby(claves)["persona"].nunique().rename("Total").reset_index()
+        tabla = por_genero.merge(total, on=claves)
+        tabla["Porcentaje"] = (tabla["Personas"] / tabla["Total"] * 100).round(1)
+        return tabla
+
+    orden = [c for c in catalogo.values() if c in set(datos["Conducta"])]
+    todos = _porcentajes(datos, ["Conducta"])
+    por_participante = _porcentajes(datos.dropna(subset=["Participante"]), ["Conducta", "Participante"])
+
+    fig = px.bar(
+        todos, x="Conducta", y="Porcentaje", color="Género", barmode="group", text="Porcentaje",
+        title=f"Participación por conducta del {nombre_grupo} y género (todos los participantes)",
+        labels={"Porcentaje": "% de las personas que mostraron la conducta"},
+        color_discrete_map=COLORES_GENERO,
+        category_orders={"Conducta": orden, "Género": list(COLORES_GENERO)},
+        hover_data={"Personas": True, "Total": True},
+    )
+    fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+    fig.update_layout(height=480, yaxis=dict(range=[0, 115]), xaxis=dict(tickangle=-30, automargin=True))
+    st.plotly_chart(fig, use_container_width=True, config=chart_config)
+
+    if not por_participante.empty:
+        fig = px.bar(
+            por_participante, x="Conducta", y="Porcentaje", color="Género", barmode="group", text="Porcentaje",
+            facet_row="Participante",
+            title=f"Participación por conducta del {nombre_grupo} y género, por tipo de participante",
+            labels={"Porcentaje": "% de las personas que mostraron la conducta"},
+            color_discrete_map=COLORES_GENERO,
+            category_orders={"Conducta": orden, "Género": list(COLORES_GENERO),
+                             "Participante": list(PARTICIPANTES_LINEAS.values())},
+            hover_data={"Personas": True, "Total": True},
+        )
+        fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+        fig.update_layout(height=700, yaxis=dict(range=[0, 115]), yaxis2=dict(range=[0, 115]),
+                          xaxis=dict(tickangle=-30, automargin=True), xaxis2=dict(tickangle=-30))
+        fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+        st.plotly_chart(fig, use_container_width=True, config=chart_config)
+
+    st.caption(
+        "Una persona = un código dentro de un encuentro. El porcentaje es, entre las personas que mostraron la conducta "
+        "(al menos una vez en cualquier momento), la proporción de cada género. "
+        f"El sexo viene de la hoja Docentes únicos; {sin_sexo} de {total_obs} observaciones no tienen sexo "
+        "registrado ahí y quedan fuera."
+    )
 
 
 # ==========================================
