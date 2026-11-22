@@ -4,7 +4,7 @@ import plotly.express as px
 import streamlit as st
 
 from utils.biobots_bucaramanga import (
-    SURVEY_URL, SOURCE_URL, GROUPS, distribution, stacked_figure, barrier_counts, wrapped,
+    SURVEY_URL, SOURCE_URL, GROUPS, distribution, stacked_figure, application_figure, barrier_counts, wrapped,
 )
 
 
@@ -49,6 +49,9 @@ def render(style_figure, plot, analysis_callout):
                     'Reforzar la explicación y la práctica guiada en esta transición.')
         if index == 3:
             st.caption('Estas respuestas reflejan percepciones docentes; no son una medición directa del aprendizaje ni una estimación causal del efecto de BioBots.')
+        if index == 5:
+            plot(style_figure(application_figure(table), height=520), 'bucaramanga_application')
+            st.caption('Se muestran solo “Resultados mixtos” y “Aplicado con éxito”; “Sin aplicación” (si existe) se ve en la gráfica apilada de arriba.')
         if index == 6:
             st.caption('Este bloque puede tener una base menor que el resto de la encuesta. No se asume que quienes no respondieron nunca usaron los recursos.')
     columns = [c for c in data.columns if c.startswith('¿Qué factores dificultaron')]

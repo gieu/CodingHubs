@@ -128,12 +128,12 @@ def goals_figure(data):
 def heatmap_figure(data):
     values = data.sort_values('Total', ascending=False, na_position='last')[list(SCENARIOS)]
     labels = [f'Docente {i+1:02d}' for i in range(len(values))]
-    texts = [[str(int(v)) if pd.notna(v) else 'Sin registro' for v in row] for row in values.to_numpy()]
+    texts = [[str(int(v)) if pd.notna(v) else '0' for v in row] for row in values.to_numpy()]
     fig = go.Figure(go.Heatmap(z=values.to_numpy(), x=list(SCENARIOS), y=labels,
                               colorscale=[[0, '#E3F2FD'], [0.45, '#1DB2E8'], [1, '#0D47A1']],
                               zmin=0, colorbar=dict(title='Veces'), hoverongaps=False,
                               hovertemplate='%{y}<br>%{x}: %{z} implementaciones<extra></extra>'))
-    # Anotaciones también en celdas vacías, sin convertirlas en cero.
+    # Las celdas sin registro se rotulan 0 pero siguen vacías en la escala de color.
     for row, label in enumerate(labels):
         for col, scenario in enumerate(SCENARIOS):
             fig.add_annotation(x=scenario, y=label, text=texts[row][col], showarrow=False,
