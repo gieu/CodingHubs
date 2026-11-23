@@ -1,18 +1,29 @@
 TITULO="Marco de Calidad"
-TEXTO="""En esta sección se presentan los resultados consolidados de cada una de las 420 instituciones evaluadas, organizados por las dimensiones clave: Liderazgo y visión, Plan de estudios, Enseñanza, aprendizaje y
-evaluación, Desarrollo profesional del personal docente, Equidad, diversidad e inclusión, Proyección en educación terciaria, Impacto en los resultados, y Equidad de género.
-
-Cada institución recibe una calificación en una escala de 1A a 5 para cada una de las dimensiones, lo que permite evaluar su desempeño específico. Además, se muestra el promedio general de las calificaciones obtenidas en las 8 dimensiones, proporcionando una visión completa del estado de las instituciones en el marco del proyecto."""
+TEXTO = "Los resultados se presentan en ocho dimensiones, con una escala de 1A a 5."
 
 
-# URL del CSV publicado de Google Sheets
-CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRVc2rbCoOeSvbw99wbWhECryfq3cvS5YA8HHhnYGKCtLHNGleoGM6wPqde8Qtfg/pub?gid=618340973&single=true&output=csv"
+# CSV del consolidado compartido en Google Drive.
+CSV_URL = "https://docs.google.com/spreadsheets/d/1qMlLT2gCVcwHZb1UC1f3U-LBcfHV_Dnt/export?format=csv"
 
 # Opciones iniciales
 OPCIONES_INICIALES = ['Promedio', 'Moda', 'Mediana']
 
 # Mapeo actualizado para categorías
 MAPPING = {'0': 0, '1A': 1, '1B': 2, '2A': 3, '2B': 4, '3A': 5, '3B': 6, '4': 7, '5': 8}
+ESCALA_NIVELES = [nivel for nivel in MAPPING if nivel != "0"]
+
+ETIQUETAS_MOMENTOS = {
+    "pre_2023": "Pretest 2023",
+    "post_2023": "Postest 2023",
+    "pre_2024": "Pretest 2024",
+    "post_2024": "Postest 2024",
+    "post_2025": "Postest 2025",
+    "nivel_2025": "Nivel 2025",
+    "post_2026_junio": "Postest · junio 2026",
+    "nivel_2026_junio": "Nivel · junio 2026",
+    "post_2026_diciembre": "Postest · diciembre 2026",
+    "nivel_2026_diciembre": "Nivel · diciembre 2026",
+}
 
 # Colores para los gráficos
 COLORS = {
@@ -22,6 +33,10 @@ COLORS = {
     'post_2024': {'line': 'rgb(35, 8, 90)', 'fill': 'rgba(35, 8, 90, 0.3)'},
     'post_2025': {'line': 'rgb(229, 0, 126)', 'fill': 'rgba(229, 0, 126, 0.3)'},
     'nivel_2025': {'line': 'rgb(233, 161, 69)', 'fill': 'rgba(233, 161, 69, 0.3)'},
+    'post_2026_junio': {'line': '#138276', 'fill': 'rgba(19, 130, 118, 0.18)'},
+    'nivel_2026_junio': {'line': '#577d1b', 'fill': 'rgba(87, 125, 27, 0.18)'},
+    'post_2026_diciembre': {'line': '#1f5480', 'fill': 'rgba(31, 84, 128, 0.18)'},
+    'nivel_2026_diciembre': {'line': '#a7522b', 'fill': 'rgba(167, 82, 43, 0.18)'},
 }
 
 # Mapeo de nombres completos a nombres cortos
