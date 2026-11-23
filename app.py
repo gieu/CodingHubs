@@ -28,10 +28,10 @@ def main():
                 url_path="/pares"
             ),
             st.Page(
-                page="app_pages/encuentros_colaborativos.py",
-                title="Encuentros Colaborativos",
+                page="app_pages/encuentros_colaborativos_2025.py",
+                title="Encuentros Colaborativos 2025",
                 icon="🤝",
-                url_path="/encuentros_colaborativos"
+                url_path="/encuentros_colaborativos_2025"
             ),
             st.Page(
                 page="app_pages/encuentros_colaborativos_2026.py",

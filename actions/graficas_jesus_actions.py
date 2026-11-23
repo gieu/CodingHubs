@@ -29,6 +29,7 @@ def graficas_jesus(df):
     # Las gráficas se agrupan por los datos que usan; dentro de cada grupo van las distintas formas de verlos.
     st.header("Acciones")
     grafica_heatmap_acciones(df)
+    grafica_barras_acciones(df)
 
     st.divider()
     st.header("Tipo de participante")
@@ -141,6 +142,68 @@ def grafica_heatmap_acciones(df):
     )
     fig.update_traces(text=pivot_data.values, texttemplate="%{text}", textfont={"size": 14})
     st.plotly_chart(fig, use_container_width=True, config=chart_config)
+
+
+def grafica_barras_acciones(df):
+    """Barras: cuántas veces se registró cada acción, y en cuántos encuentros hubo cada número de instantánea."""
+    columnas = ["id_respuesta", "numero_instantanea", "accion_momento"]
+    faltantes = [c for c in columnas if c not in df.columns]
+    if faltantes:
+        st.warning(f"Faltan columnas en los datos: {', '.join(faltantes)}")
+        return
+
+    datos = df[columnas].copy()
+    datos["numero_instantanea"] = pd.to_numeric(datos["numero_instantanea"], errors="coerce")
+    datos["accion_momento"] = datos["accion_momento"].astype("string").str.strip()
+    total_encuentros = int(datos["id_respuesta"].nunique())
+
+    col1, col2 = st.columns(2)
+    with col1:
+        acciones = datos.dropna(subset=["accion_momento", "numero_instantanea"])
+        acciones = acciones[acciones["accion_momento"] != ""]
+        # Una acción cuenta una vez por instantánea de un encuentro, aunque se repita en la hoja.
+        acciones = acciones.drop_duplicates(subset=["id_respuesta", "numero_instantanea", "accion_momento"])
+        frecuencia = acciones.groupby("accion_momento").size().rename("Frecuencia").reset_index()
+        frecuencia["Acción"] = frecuencia["accion_momento"].map(_etiqueta)
+        frecuencia = frecuencia.sort_values("Frecuencia", ascending=True)
+        fig = px.bar(
+            frecuencia, x="Frecuencia", y="Acción", text="Frecuencia", orientation="h",
+            title="Frecuencia por Acción Momento",
+            color="Frecuencia", color_continuous_scale=BLUE_SCALE,
+            hover_data={"accion_momento": True},
+        )
+        fig.update_traces(texttemplate="%{text}", textposition="outside")
+        fig.update_layout(
+            showlegend=False, coloraxis_showscale=False, height=max(420, 30 * len(frecuencia) + 120),
+            xaxis=dict(range=[0, frecuencia["Frecuencia"].max() * 1.15]),
+            yaxis=dict(title="", automargin=True, tickfont=dict(size=11)),
+        )
+        st.plotly_chart(fig, use_container_width=True, config=chart_config)
+    with col2:
+        instantaneas = datos.dropna(subset=["numero_instantanea"]).copy()
+        instantaneas["numero_instantanea"] = instantaneas["numero_instantanea"].astype(int)
+        # Una instantánea registrada = una por encuentro (id_respuesta) y número, sin importar cuántas acciones tuvo.
+        por_numero = (
+            instantaneas.drop_duplicates(subset=["id_respuesta", "numero_instantanea"])
+            .groupby("numero_instantanea").size().rename("Encuentros").reset_index()
+        )
+        fig = px.bar(
+            por_numero, x="numero_instantanea", y="Encuentros", text="Encuentros",
+            title="Observaciones por Instantánea",
+            labels={"numero_instantanea": "Instantánea", "Encuentros": "Encuentros con la instantánea registrada"},
+            color="Encuentros", color_continuous_scale=BLUE_SCALE,
+        )
+        fig.update_traces(texttemplate="%{text}", textposition="outside")
+        fig.update_layout(
+            showlegend=False, coloraxis_showscale=False, height=max(420, 30 * len(frecuencia) + 120),
+            xaxis=dict(tickmode="linear", dtick=1),
+            yaxis=dict(range=[0, total_encuentros * 1.15], dtick=1),
+        )
+        st.plotly_chart(fig, use_container_width=True, config=chart_config)
+    st.caption(
+        "Izquierda: veces que se registró cada acción (una vez por instantánea y encuentro). "
+        f"Derecha: en cuántos de los {total_encuentros} encuentros se registró cada número de instantánea."
+    )
 
 
 PARTICIPANTES = {
