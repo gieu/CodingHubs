@@ -3,17 +3,10 @@ import pandas as pd
 import plotly.express as px  # type: ignore
 import plotly.graph_objects as go  # type: ignore
 import streamlit as st
-from constants.marco_constants import (
-    COLORS,
-    CSV_URL,
-    ESCALA_NIVELES,
-    ETIQUETAS_MOMENTOS,
-    MAPPING,
-    OPCIONES_INICIALES,
-)
+from constants.marco_constants import COLORS, CSV_URL, MAPPING
  
 
-MOMENTOS_RADAR = list(ETIQUETAS_MOMENTOS)
+MOMENTOS_RADAR = ["pre_2023", "post_2023", "pre_2024", "post_2024", "post_2025", "nivel_2025"]
 
 NOMBRES_DIMENSIONES_RADAR = {
     "Dimensión 1": "Liderazgo y visión",
@@ -34,31 +27,33 @@ def centrar_texto(texto, tipo="h1"):
     )
 
 
-@st.cache_data(ttl=600)
 def cargar_datos():
-    df = pd.read_csv(CSV_URL)
-    df.columns = df.columns.str.strip()
-    return df
+    """
+    Carga los datos desde el archivo CSV publicado en Google Sheets.
+    """
+    return pd.read_csv(CSV_URL)
 
 
 def obtener_opciones_codigos(df):
     """
     Genera las opciones de códigos de IE, combinando las opciones iniciales con los valores únicos de los códigos de IE.
     """
-    codigos = df["Código IE"].unique()
-    return [codigo for codigo in OPCIONES_INICIALES if codigo in codigos] + [
-        codigo for codigo in codigos if codigo not in OPCIONES_INICIALES
+    opciones_codigos = ["Promedio", "Moda", "Mediana"] + [
+        codigo
+        for codigo in df["Código IE"].unique()
+        if codigo not in ["Promedio", "Moda", "Mediana"]
     ]
+    return opciones_codigos
 
 
-def obtener_datos_pretest_posttest(datos_codigo):
+def obtener_datos_pretest_posttest(datos_codigo, momentos=MOMENTOS_RADAR):
     """
     Obtiene las series disponibles de un codigo de IE para el radar.
     """
     series = {}
     categorias = None
 
-    for momento in MOMENTOS_RADAR:
+    for momento in momentos:
         datos_momento = datos_codigo[datos_codigo["Momento"] == momento]
         if datos_momento.empty:
             continue
@@ -80,16 +75,19 @@ def obtener_datos_pretest_posttest(datos_codigo):
     return series, categorias
 
 
-def crear_grafico_radar(series_momentos, categorias, codigo, momentos_seleccionados=None):
+def crear_grafico_radar(
+    series_momentos, categorias, codigo, momentos_seleccionados=None, *, etiquetas=None, colores=COLORS
+):
     """
     Crea un grafico de radar comparando los momentos disponibles.
     """
     fig = go.Figure()
 
-    momentos_base = momentos_seleccionados or MOMENTOS_RADAR
+    orden_momentos = list(etiquetas) if etiquetas is not None else MOMENTOS_RADAR
+    momentos_base = momentos_seleccionados or orden_momentos
     momentos_disponibles = [
         momento
-        for momento in MOMENTOS_RADAR
+        for momento in orden_momentos
         if momento in series_momentos and momento in momentos_base
     ]
     orden_dibujo = sorted(
@@ -103,17 +101,17 @@ def crear_grafico_radar(series_momentos, categorias, codigo, momentos_selecciona
     ]
 
     for momento in orden_dibujo:
-        color = COLORS[momento]
+        color = colores[momento]
         fig.add_trace(
             go.Scatterpolar(
                 r=series_momentos[momento].values,
                 theta=etiquetas_categorias + [etiquetas_categorias[0]],
                 fill="toself",
                 connectgaps=True,
-                name=ETIQUETAS_MOMENTOS[momento],
+                name=etiquetas[momento] if etiquetas is not None else momento.replace("_", " ").title(),
                 line_color=color["line"],
                 fillcolor=color["fill"],
-                legendrank=MOMENTOS_RADAR.index(momento),
+                legendrank=orden_momentos.index(momento),
             )
         )
 
@@ -145,7 +143,7 @@ def heatmap(df, clean_column_names: dict = None, value_cols: list = None, codigo
     con px.imshow de plotly.express."""
     df = df.copy()
 
-    ordered_vals = ESCALA_NIVELES
+    ordered_vals = ["1A", "1B", "2A", "2B", "3A", "3B", "4", "5"]
 
     df_long = df.astype(str).melt(
         id_vars="codigo_ie",
@@ -402,9 +400,9 @@ def conteo_estado(df):
     return fig
 
 
-def barras_pretest_postest(df, value_cols: dict = None):
+def barras_pretest_postest(df, value_cols: dict = None, *, mostrar_conteos=False):
     df = df.copy()
-    ordered_vals = ESCALA_NIVELES
+    ordered_vals = ["1A", "1B", "2A", "2B", "3A", "3B", "4", "5"]
 
     color_map = {
         "1A": "#fcb6ae",  # red 1
@@ -431,7 +429,8 @@ def barras_pretest_postest(df, value_cols: dict = None):
         df_long["Categoria"], ordered_vals, ordered=True
     )
 
-    pct = df_long.groupby(["Momento", "Categoria"], observed=True).size().reset_index(name="Instituciones")
+    opciones_grupo = {"observed": True} if mostrar_conteos else {}
+    pct = df_long.groupby(["Momento", "Categoria"], **opciones_grupo).size().reset_index(name="Instituciones")
     pct["Total"] = pct.groupby("Momento")["Instituciones"].transform("sum")
     pct["Porcentaje"] = pct["Instituciones"] / pct["Total"]
 
@@ -443,7 +442,7 @@ def barras_pretest_postest(df, value_cols: dict = None):
         orientation="h",
         category_orders={"Categoria": ordered_vals},
         color_discrete_map=color_map,
-        hover_data={"Instituciones": True, "Total": True, "Porcentaje": ":.1%"},
+        hover_data={"Instituciones": True, "Total": True, "Porcentaje": ":.1%"} if mostrar_conteos else None,
     )
     fig.update_yaxes(
         categoryorder="array", categoryarray=list(value_cols.values())[::-1]

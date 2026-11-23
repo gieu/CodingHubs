@@ -176,7 +176,7 @@ cython_debug/
 
 # Local Codex skill
 .agents/
-
+.serena/
 # Entorno local
 venv-codinghubs/
 

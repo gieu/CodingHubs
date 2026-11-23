@@ -60,6 +60,12 @@ def main():
                 title="Marco de calidad",
                 icon="📊",
                 url_path="/marco"
+            ),
+            st.Page(
+                page="app_pages/marco_bucaramanga.py",
+                title="Marco Bucaramanga",
+                icon="📊",
+                url_path="marco_bucaramanga"
             )
         ],
         "Análisis de Masters": [
