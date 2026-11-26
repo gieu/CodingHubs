@@ -6,13 +6,16 @@ import streamlit as st
 from actions.marco_actions import (
     barras_pretest_postest,
     centrar_texto,
+    conteo_estado,
     crear_grafico_radar,
+    grafica_estado,
+    heatmap,
     obtener_datos_pretest_posttest,
     obtener_opciones_codigos,
 )
 from constants.footer_constants import FOOTER_HTML, IMAGENES_BASE64
 from constants.header_constants import header
-from constants.marco_constants import COLORS, MAPPING, OPCIONES_INICIALES
+from constants.marco_constants import COLORS, ETIQUETAS_INDICADORES, MAPPING, OPCIONES_INICIALES
 from utils.chart_config import get_chart_config
 
 
@@ -36,18 +39,19 @@ COLORES_RADAR = {
     "nivel_2026_diciembre": {"line": "#a7522b", "fill": "rgba(167, 82, 43, 0.18)"},
 }
 DIMENSIONES = (
-    "Liderazgo y visión",
-    "Plan de área",
-    "Enseñanza, aprendizaje y evaluación",
-    "Desarrollo profesional del personal docente",
-    "Equidad, diversidad e inclusión",
-    "Proyección en educación terciaria",
-    "Impacto en los resultados",
-    "Equidad de género",
+    ("Liderazgo y visión", "1dxRkyDa7kUAIw1Pd9k0xYLvtKC5DJMPh"),
+    ("Plan de área", "13BaYkmgOjIaTOgoeYzPIKUO2G36QC1JP"),
+    ("Enseñanza, aprendizaje y evaluación", "1KjdEUgUxE25ZLlVX7erV1CB4zQyW9qaf"),
+    ("Desarrollo profesional del personal docente", "1CizX5rZ4xMMHFL1A3SN1CixVVdbMYFmm"),
+    ("Equidad, diversidad e inclusión", "1QLHuZ6FwnpDGrou9KRpFkGB7T5jHpSqL"),
+    ("Proyección en educación terciaria", "16JCSHqSf_VYhTcjuVwc9VYFTAiVW4WjA"),
+    ("Impacto en los resultados", "1oOpYhhiaCm23viaIxhOZDkDQ4tU26gnc"),
+    ("Equidad de género", "1yd0zfAQiNzy3ZyvOXbmCwkGGmvL_AxdE"),
 )
 
+
 @st.cache_data(ttl=600)
-def cargar_consolidado(url):
+def cargar_csv(url):
     df = pd.read_csv(url)
     df.columns = df.columns.str.strip()
     return df
@@ -58,7 +62,7 @@ centrar_texto("Marco Bucaramanga", "h1")
 header("#282255")
 
 try:
-    df = cargar_consolidado(CONSOLIDADO_URL)
+    df = cargar_csv(CONSOLIDADO_URL)
 except (URLError, pd.errors.EmptyDataError, pd.errors.ParserError):
     st.error("No se pudo leer el consolidado de Marco de Calidad desde Google Sheets.")
     st.stop()
@@ -119,10 +123,32 @@ with tab2:
     if not momentos_disponibles:
         st.info("El consolidado no tiene mediciones disponibles.")
     else:
+        solo_priorizadas = st.toggle("Prioriza la dimensión", key="marco_bucaramanga_prioriza")
+        st.caption("Los estados toman como referencia el postest de junio de 2026.")
         instituciones = df[~df["codigo_ie"].isin(OPCIONES_INICIALES)]
-        for numero, dimension in enumerate(DIMENSIONES, start=1):
+        for numero, (dimension, archivo_id) in enumerate(DIMENSIONES, start=1):
             with st.expander(f"{numero}. {dimension}"):
-                niveles = instituciones.pivot(
+                try:
+                    detalle = cargar_csv(f"https://drive.google.com/uc?export=download&id={archivo_id}")
+                except (URLError, pd.errors.EmptyDataError, pd.errors.ParserError):
+                    detalle = pd.DataFrame()
+
+                detalle_disponible = "codigo_ie" in detalle and not detalle.empty
+                if not detalle_disponible:
+                    st.warning("No se pudo leer el archivo de indicadores de esta dimensión desde Google Drive.")
+
+                instituciones_dimension = instituciones
+                if solo_priorizadas:
+                    if not detalle_disponible or "dim_priorizada" not in detalle:
+                        st.info("No hay datos de priorización para esta dimensión.")
+                        continue
+                    detalle = detalle[detalle["dim_priorizada"] == "Sí"]
+                    if detalle.empty:
+                        st.info("Ninguna institución priorizó esta dimensión.")
+                        continue
+                    instituciones_dimension = instituciones[instituciones["codigo_ie"].isin(detalle["codigo_ie"])]
+
+                niveles = instituciones_dimension.pivot(
                     index="codigo_ie", columns="Momento", values=f"Dimensión {numero}"
                 )
                 etiquetas = {
@@ -133,8 +159,43 @@ with tab2:
                 if etiquetas:
                     fig = barras_pretest_postest(niveles, etiquetas, mostrar_conteos=True)
                     st.plotly_chart(fig, config=chart_config, key=f"marco_bucaramanga_distribucion_{numero}")
+
+                    fig = heatmap(niveles.reset_index(), etiquetas, list(etiquetas))
+                    fig.update_layout(width=None, title="Mapa de calor por institución y medición")
+                    fig.update_yaxes(
+                        title_text="Medición", categoryorder="array", categoryarray=list(etiquetas.values())
+                    )
+                    fig.update_traces(
+                        hovertemplate="Institución: %{x}<br>Medición: %{y}<br>Nivel: %{customdata}<extra></extra>"
+                    )
+                    st.plotly_chart(fig, config=chart_config, key=f"marco_bucaramanga_mapa_{numero}")
                 else:
                     st.info("No hay puntajes de instituciones para esta dimensión.")
+
+                if not detalle_disponible:
+                    continue
+
+                estados = ["aumento", "igual", "alerta"]
+                if set(estados).issubset(detalle):
+                    estados_validos = detalle[detalle[estados].eq(True).sum(axis=1) == 1]
+                    if not estados_validos.empty:
+                        fig = conteo_estado(estados_validos)
+                        st.plotly_chart(fig, config=chart_config, key=f"marco_bucaramanga_conteo_{numero}")
+                        fig = grafica_estado(estados_validos)
+                        st.plotly_chart(fig, config=chart_config, key=f"marco_bucaramanga_alertas_{numero}")
+
+                indicadores = {
+                    columna: etiqueta
+                    for columna, etiqueta in ETIQUETAS_INDICADORES[numero].items()
+                    if columna.startswith("nivel_") and columna in detalle
+                }
+                if not indicadores:
+                    st.warning("El archivo de esta dimensión no contiene los niveles por institución.")
+                    continue
+
+                fig = heatmap(detalle, indicadores, list(indicadores))
+                fig.update_layout(width=None)
+                st.plotly_chart(fig, config=chart_config, key=f"marco_bucaramanga_escalas_{numero}")
 
 
 st.markdown("---")
