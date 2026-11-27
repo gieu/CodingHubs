@@ -9,6 +9,7 @@ from actions.marco_actions import (
     crear_grafico_radar,
     grafica_estado,
     heatmap,
+    mapa_meta_3a,
     MOMENTOS_RADAR,
     obtener_datos_pretest_posttest,
     obtener_opciones_codigos,
@@ -26,7 +27,7 @@ centrar_texto(TITULO, "h1")
 header("#282255")
 
 
-CONSOLIDADO_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRVc2rbCoOeSvbw99wbWhECryfq3cvS5YA8HHhnYGKCtLHNGleoGM6wPqde8Qtfg/pub?gid=618340973&single=true&output=csv"
+CONSOLIDADO_URL = "https://docs.google.com/spreadsheets/d/1SsigQpvMuQSaqQrxfX550VvDZcbaKuYi/export?format=csv"
 DIMENSION_1_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR1FBv9IicEsBDsANqyg5PxO8L6XYWTC0RV77KwmB-j7e9Nw1sRuCjtpHxeWn630u0flW5joYSv4jKK/pub?gid=1924393472&single=true&output=csv"
 DIMENSION_2_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSnTVsXcL0Ag4rEfO0EmKu3NO-qPgnAlj1smalQE_CQlcop-00LyQ1KHemBf4xUp2CaLmbukJVz7SQw/pub?gid=586390731&single=true&output=csv"
 DIMENSION_3_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQDS5KB6oesIgGpY7swU6CkWRwe36WYtjkZLI89GtlnZtE83DRjU7ZMOlJOvEaRu6e_1ce1FuSivOb5/pub?output=csv"
@@ -44,8 +45,8 @@ def load_data(file):
     return df
 
 df = load_data(CONSOLIDADO_URL)
-manizales_2023 = df["codigo_ie"].str.endswith("Instituto Manizales") & df["Momento"].isin(("pre_2023", "post_2023"))
-df.loc[manizales_2023, df.columns[2:]] = df.loc[manizales_2023, df.columns[2:]].replace("3", "3B")
+momentos_2023 = df["Momento"].isin(("pre_2023", "post_2023"))
+df.loc[momentos_2023, df.columns[2:]] = df.loc[momentos_2023, df.columns[2:]].replace({"3": "3B", "3.0": "3B", 3: "3B"})
 dimension_1_df = load_data(DIMENSION_1_URL)
 dimension_2_df = load_data(DIMENSION_2_URL)
 dimension_3_df = load_data(DIMENSION_3_URL)
@@ -91,7 +92,7 @@ dimensiones = {
 }
 
 
-tab1, tab2 = st.tabs(["Marco de Calidad", "Análisis de dimensiones"])
+tab1, tab2, tab_meta = st.tabs(["Marco de Calidad", "Análisis de dimensiones", "Meta 3A o más"])
 
 with tab1:
     st.markdown("---")
@@ -183,6 +184,12 @@ with tab2:
             fig = heatmap(dim_df, clean_names, list(clean_names.keys()), CODIGO_IE_NOMBRES)
             st.plotly_chart(fig, config=get_chart_config(), key=random.random())
 
+
+with tab_meta:
+    st.subheader("¿Cómo ha evolucionado el cumplimiento de la meta?")
+    st.caption("Porcentaje de colegios con nivel 3A, 3B, 4 o 5 entre los evaluados en cada dimensión y momento.")
+    nombres_dimensiones = [nombre.split(". ", 1)[1].rstrip(".") for nombre in dimensiones]
+    st.plotly_chart(mapa_meta_3a(df, nombres_dimensiones), config=chart_config, key="marco_meta_3a")
 
 st.markdown("---")
 st.write(

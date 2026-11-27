@@ -1,8 +1,11 @@
+from textwrap import wrap
+
 import numpy as np
 import pandas as pd
 import plotly.express as px  # type: ignore
 import plotly.graph_objects as go  # type: ignore
 import streamlit as st
+from actions.observaciones_2026_actions import GREEN_SCALE
 from constants.marco_constants import COLORS, CSV_URL, MAPPING
  
 
@@ -32,6 +35,56 @@ def cargar_datos():
     Carga los datos desde el archivo CSV publicado en Google Sheets.
     """
     return pd.read_csv(CSV_URL)
+
+
+def mapa_meta_3a(df, nombres_dimensiones):
+    """Muestra el porcentaje de colegios que alcanzaron la meta por dimensión."""
+    momentos = {
+        "pre_2023": "Pre 2023",
+        "post_2023": "Post 2023",
+        "pre_2024": "Pre 2024",
+        "post_2024": "Post 2024",
+        "post_2025": "Post 2025",
+    }
+    dimensiones = [f"Dimensión {n}" for n in range(1, len(nombres_dimensiones) + 1)]
+    codigos = df["codigo_ie"].astype("string").str.strip()
+    es_colegio = codigos.notna() & codigos.ne("") & ~codigos.isin(["Moda", "Mediana", "Promedio"])
+    colegios = df.loc[es_colegio & df["Momento"].isin(momentos)]
+    total_colegios = colegios.groupby("Momento")["codigo_ie"].nunique().reindex(momentos, fill_value=0)
+
+    niveles = colegios[dimensiones].apply(
+        lambda columna: columna.astype("string").str.strip().str.upper().str.replace(r"\.0$", "", regex=True)
+    )
+    puntajes = niveles.apply(lambda columna: columna.map(MAPPING))
+    evaluados = puntajes.notna().groupby(colegios["Momento"]).sum().reindex(momentos, fill_value=0).T
+    lograron = puntajes.ge(MAPPING["3A"]).groupby(colegios["Momento"]).sum().reindex(momentos, fill_value=0).T
+    porcentajes = lograron.div(evaluados.where(evaluados.gt(0))) * 100
+
+    fig = go.Figure(go.Heatmap(
+        x=list(momentos.values()), y=nombres_dimensiones, z=porcentajes.to_numpy().tolist(),
+        zmin=0, zmax=100, colorscale=GREEN_SCALE, showscale=False, xgap=2, ygap=2,
+        customdata=np.stack([lograron, evaluados], axis=-1).tolist(),
+        hovertemplate="%{y}<br>%{x}: %{z:.0f}%<br>Colegios: %{customdata[0]} de %{customdata[1]}<extra></extra>",
+    ))
+    for fila, dimension in enumerate(nombres_dimensiones):
+        for columna, momento in enumerate(momentos.values()):
+            porcentaje = porcentajes.iat[fila, columna]
+            fig.add_annotation(
+                x=momento, y=dimension, showarrow=False,
+                text=f"<b>{porcentaje:.0f}%</b>" if pd.notna(porcentaje) else "—",
+                font=dict(color="#FFFFFF" if porcentaje >= 75 else "#173522"),
+            )
+
+    fig.update_xaxes(
+        side="top", tickmode="array", tickvals=list(momentos.values()), tickangle=0,
+        ticktext=[f"{momento}<br>{total_colegios[key]} colegios" for key, momento in momentos.items()],
+    )
+    fig.update_yaxes(
+        autorange="reversed", automargin=True, tickmode="array", tickvals=nombres_dimensiones,
+        ticktext=["<br>".join(wrap(nombre, width=27)) for nombre in nombres_dimensiones],
+    )
+    fig.update_layout(height=480, margin=dict(l=8, r=8, t=58, b=12))
+    return fig
 
 
 def obtener_opciones_codigos(df):
