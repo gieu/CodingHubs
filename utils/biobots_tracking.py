@@ -109,6 +109,44 @@ def accompaniment_figure(data):
     return top_legend(fig)
 
 
+def accompaniment_implementation_figure(data):
+    frame = data.dropna(subset=['Acompañamiento', 'Total']).copy()
+    frame = frame[frame['Grupo'].isin(GROUPS)]
+    if frame.empty:
+        return None
+    frame['x'] = frame['Acompañamiento'].astype(float)
+    frame['dx'] = 0.0
+    for _, idx in frame.groupby('x').groups.items():
+        ordered = frame.loc[idx].sort_values(['Grupo', 'Total']).index
+        if len(ordered) > 1:
+            frame.loc[ordered, 'dx'] = [-0.3 + 0.6 * i / (len(ordered) - 1) for i in range(len(ordered))]
+    fig = go.Figure()
+    for group in GROUPS:
+        part = frame[frame['Grupo'].eq(group)]
+        if part.empty:
+            continue
+        fig.add_trace(go.Scatter(
+            x=part['x'] + part['dx'], y=part['Total'], mode='markers', name=f'{group} ({len(part)} docentes)',
+            marker=dict(color=PALETTE[group], size=11, opacity=0.85, line=dict(color='white', width=1)),
+            customdata=part[['x']],
+            hovertemplate='%{customdata[0]:.0f} sesiones de acompañamiento<br>%{y:.0f} implementaciones<extra>%{fullData.name}</extra>',
+        ))
+    levels = sorted(frame['x'].unique())
+    ticks = [f"{int(l)} {'sesión' if l == 1 else 'sesiones'}<br>n = {int(frame['x'].eq(l).sum())}" for l in levels]
+    top = float(frame['Total'].max())
+    for level in levels:
+        column = frame[frame['x'].eq(level)]
+        mean = float(column['Total'].mean())
+        fig.add_shape(type='line', x0=level - 0.38, x1=level + 0.38, y0=mean, y1=mean, line=dict(color='#203447', width=3))
+        fig.add_annotation(x=level + 0.38, y=mean, text=f'{mean:.1f}', showarrow=False, xanchor='left', xshift=4,
+                           font=dict(size=12, color='#203447'))
+    fig.update_layout(title='Más acompañamiento, más implementación',
+                      legend=dict(itemclick=False, itemdoubleclick=False))
+    fig.update_xaxes(title='Número de sesiones de acompañamiento', tickvals=levels, ticktext=ticks, title_standoff=14, range=[min(levels) - 0.6, max(levels) + 0.8])
+    fig.update_yaxes(title='Número total de implementaciones', rangemode='tozero', range=[0, top * 1.12 + 1])
+    return top_legend(fig)
+
+
 def goals_figure(data):
     initial = data[list(SCENARIOS)].gt(0).any(axis=1)
     sequence = data[['E2 · Exploración', 'E2 · Programación', 'E3']].gt(0).all(axis=1)
@@ -126,16 +164,20 @@ def goals_figure(data):
 
 
 def heatmap_figure(data):
-    values = data.sort_values('Total', ascending=False, na_position='last')[list(SCENARIOS)]
+    values = data.sort_values('Total', ascending=False, na_position='last')[list(SCENARIOS)].copy()
+    # E2 tiene dos fases: en el mapa se suman en una sola columna (vacía solo si ambas fases carecen de registro).
+    phases = ['E2 · Exploración', 'E2 · Programación']
+    values.insert(1, 'E2', values[phases].sum(axis=1, min_count=1))
+    values = values.drop(columns=phases)
     labels = [f'Docente {i+1:02d}' for i in range(len(values))]
     texts = [[str(int(v)) if pd.notna(v) else '0' for v in row] for row in values.to_numpy()]
-    fig = go.Figure(go.Heatmap(z=values.to_numpy(), x=list(SCENARIOS), y=labels,
+    fig = go.Figure(go.Heatmap(z=values.to_numpy(), x=list(values.columns), y=labels,
                               colorscale=[[0, '#E3F2FD'], [0.45, '#1DB2E8'], [1, '#0D47A1']],
                               zmin=0, colorbar=dict(title='Veces'), hoverongaps=False,
                               hovertemplate='%{y}<br>%{x}: %{z} implementaciones<extra></extra>'))
     # Las celdas sin registro se rotulan 0 pero siguen vacías en la escala de color.
     for row, label in enumerate(labels):
-        for col, scenario in enumerate(SCENARIOS):
+        for col, scenario in enumerate(values.columns):
             fig.add_annotation(x=scenario, y=label, text=texts[row][col], showarrow=False,
                                font=dict(size=11, color='#203447'), bgcolor='rgba(255,255,255,0.9)')
     fig.update_layout(title='Frecuencia de implementación por docente y escenario')

@@ -45,11 +45,17 @@ def render(style_figure, plot):
     missing = ', '.join(f"{group}: {int(data.loc[data['Grupo'].eq(group), 'Acompañamiento'].isna().sum())} sin registro" for group in tracking.GROUPS)
     st.caption(f'Base: todos los docentes de cada grupo. {missing}. Los vacíos no se cuentan como cero sesiones.')
 
+    relation = tracking.accompaniment_implementation_figure(data)
+    if relation is not None:
+        show(relation, 'buca_tracking_relation', height=560, legend=True)
+        used = int(data.dropna(subset=['Acompañamiento', 'Total'])['Grupo'].isin(tracking.GROUPS).sum())
+        st.caption(f'Base: {used} docentes clasificados con sesiones de acompañamiento e implementaciones registradas; se excluyen {len(data) - used} sin esos datos o sin clasificación. Cada punto es un docente y la línea negra es el promedio de implementaciones por número de sesiones. La relación es descriptiva y no demuestra que el acompañamiento cause más implementación.')
+
     show(tracking.goals_figure(data), 'buca_tracking_goals')
     st.caption('Implementación inicial: frecuencia positiva en al menos un escenario. Secuencia hasta E3: frecuencia positiva en E2 exploración, E2 programación y E3. Estos indicadores describen registros de implementación, no resultados de aprendizaje.')
 
     show(tracking.heatmap_figure(data), 'buca_tracking_heatmap', height=max(600, len(data) * 30 + 190))
-    st.caption('Docentes ordenados por total de implementaciones. Los identificadores son visuales y pueden cambiar al actualizarse los datos. Las celdas vacías indican ausencia de registro, no cero implementaciones.')
+    st.caption('Docentes ordenados por total de implementaciones. La columna E2 suma las fases de exploración y programación. Los identificadores son visuales y pueden cambiar al actualizarse los datos. Las celdas vacías indican ausencia de registro, no cero implementaciones.')
 
     show(tracking.coverage_figure(data), 'buca_tracking_coverage')
     st.caption(f'Base: {len(data)} docentes. Cada escenario cuenta a cada docente una sola vez cuando su frecuencia registrada es mayor que cero.')
